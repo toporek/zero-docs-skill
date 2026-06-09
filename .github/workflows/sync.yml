@@ -1,0 +1,33 @@
+name: Sync Zero docs
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run tests
+        run: npm test
+      - name: Regenerate from upstream
+        run: npm run sync
+      - name: Open PR on changes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore: sync Zero docs from upstream'
+          title: 'chore: sync Zero docs from upstream'
+          body: |
+            Automated regeneration of `references/` and `INDEX.md` from
+            https://github.com/rocicorp/zero-docs. See `SOURCE.md` for the new commit.
+          branch: auto/sync-zero-docs
+          delete-branch: true
