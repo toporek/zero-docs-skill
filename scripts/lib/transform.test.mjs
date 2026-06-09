@@ -32,7 +32,6 @@ test('stripEsm keeps prose that starts with the word import', () => {
   assert.equal(stripEsm(body), 'import maps are great');
 });
 
-// add to scripts/lib/transform.test.mjs
 import { transformNotes, stripJsxTags, transformMdx } from './transform.mjs';
 
 test('transformNotes converts <Note heading> to a blockquote', () => {
@@ -73,4 +72,34 @@ test('transformMdx end-to-end produces titled markdown', () => {
   assert.match(body, /> \*\*Immutability\*\*/);
   assert.doesNotMatch(body, /import X/);
   assert.ok(body.endsWith('\n'));
+});
+
+test('stripEsm preserves import/export lines inside fenced code blocks', () => {
+  const body = [
+    "import Top from './top';",   // top-level → stripped
+    '',
+    '```ts',
+    "import { z } from 'zero';",  // inside fence → kept
+    'export const schema = z;',   // inside fence → kept
+    '```',
+    '',
+    'Prose.',
+  ].join('\n');
+  const out = stripEsm(body);
+  assert.doesNotMatch(out, /import Top/);
+  assert.match(out, /import \{ z \} from 'zero';/);
+  assert.match(out, /export const schema = z;/);
+  assert.match(out, /Prose\./);
+});
+
+test('stripEsm toggles fence state so post-fence top-level imports are still stripped', () => {
+  const body = [
+    '```ts',
+    "import { inside } from 'x';",
+    '```',
+    "import { outside } from 'y';",  // back at top level → stripped
+  ].join('\n');
+  const out = stripEsm(body);
+  assert.match(out, /import \{ inside \}/);
+  assert.doesNotMatch(out, /import \{ outside \}/);
 });

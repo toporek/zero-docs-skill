@@ -23,16 +23,27 @@ export function parseFrontmatter(raw) {
   return { data, body: raw.slice(match[0].length) };
 }
 
-/** Remove MDX `import ... from ...`, side-effect imports, and `export ...` lines. */
+/**
+ * Remove MDX `import ... from ...`, side-effect imports, and `export ...` lines
+ * that appear at the MDX top level. Lines inside fenced code blocks are preserved
+ * verbatim so code examples stay intact.
+ */
 export function stripEsm(body) {
+  let inFence = false;
   return body
     .split(/\r?\n/)
-    .filter(
-      (line) =>
+    .filter((line) => {
+      if (/^\s*```/.test(line)) {
+        inFence = !inFence;
+        return true;
+      }
+      if (inFence) return true;
+      return (
         !/^\s*import\b.*\bfrom\b.*$/.test(line) &&
         !/^\s*import\s+['"].*['"];?\s*$/.test(line) &&
-        !/^\s*export\s+(default\b|const\b|function\b|let\b|var\b|\{)/.test(line),
-    )
+        !/^\s*export\s+(default\b|const\b|function\b|let\b|var\b|\{)/.test(line)
+      );
+    })
     .join('\n')
     .trim();
 }
