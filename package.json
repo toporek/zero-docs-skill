@@ -1,0 +1,12 @@
+{
+  "name": "zero-docs-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Searchable Rocicorp Zero documentation as a Claude Code skill.",
+  "scripts": {
+    "sync": "node scripts/sync.mjs",
+    "sync:check": "node scripts/sync.mjs --check",
+    "test": "node --test"
+  }
+}
