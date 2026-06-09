@@ -31,3 +31,46 @@ test('stripEsm keeps prose that starts with the word import', () => {
   const body = 'import maps are great\n';
   assert.equal(stripEsm(body), 'import maps are great');
 });
+
+// add to scripts/lib/transform.test.mjs
+import { transformNotes, stripJsxTags, transformMdx } from './transform.mjs';
+
+test('transformNotes converts <Note heading> to a blockquote', () => {
+  const body =
+    '<Note type="warning" heading="Watch out">\nBe careful here.\n</Note>';
+  const out = transformNotes(body);
+  assert.equal(out, '> **Watch out**\n>\n> Be careful here.');
+});
+
+test('transformNotes falls back to "Note" when no heading attribute', () => {
+  const out = transformNotes('<Note type="note">\nHi\n</Note>');
+  assert.equal(out, '> **Note**\n>\n> Hi');
+});
+
+test('stripJsxTags drops lone capitalized component tags, keeps content', () => {
+  const collected = [];
+  const out = stripJsxTags('<Tabs>\nkeep me\n</Tabs>', (n) => collected.push(n));
+  assert.equal(out, 'keep me');
+  assert.deepEqual(collected, ['Tabs', 'Tabs']);
+});
+
+test('stripJsxTags leaves lowercase html-ish lines and prose alone', () => {
+  const out = stripJsxTags('<div>\nplain text\n');
+  assert.equal(out, '<div>\nplain text');
+});
+
+test('transformMdx end-to-end produces titled markdown', () => {
+  const raw =
+    '---\ntitle: ZQL\ndescription: Zero Query Language\n---\n' +
+    "import X from './x';\n\n" +
+    'Use `where()` to filter.\n\n' +
+    '<Note heading="Immutability">\nClone before mutating.\n</Note>\n';
+  const { title, description, body } = transformMdx(raw);
+  assert.equal(title, 'ZQL');
+  assert.equal(description, 'Zero Query Language');
+  assert.match(body, /^# ZQL\n/);
+  assert.match(body, /Use `where\(\)` to filter\./);
+  assert.match(body, /> \*\*Immutability\*\*/);
+  assert.doesNotMatch(body, /import X/);
+  assert.ok(body.endsWith('\n'));
+});
