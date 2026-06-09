@@ -48,10 +48,15 @@ several built-in factories for popular Postgres libraries and ORMs.
 
 ```ts
 // app/api/mutate/db-provider.ts
+import {zeroDrizzle} from '@rocicorp/zero/server/adapters/drizzle'
+import {schema} from '../../zero/schema.ts'
+import * as drizzleSchema from '../../drizzle/schema.ts'
 
 // pass a drizzle client instance. for example:
+export const drizzleClient = drizzle(pool, {
   schema: drizzleSchema
 })
+export const dbProvider = zeroDrizzle(schema, drizzleClient)
 
 // Register the database provider for type safety
 declare module '@rocicorp/zero' {
@@ -63,6 +68,10 @@ declare module '@rocicorp/zero' {
 
 ```ts
 // app/api/mutate/db-provider.ts
+import {Kysely, PostgresDialect} from 'kysely'
+import {zeroKysely} from '@rocicorp/zero/server/adapters/kysely'
+import {Pool} from 'pg'
+import {schema} from '../../zero/schema.ts'
 
 interface Database {
   user: {
@@ -79,6 +88,7 @@ const kysely = new Kysely<Database>({
     })
   })
 })
+export const dbProvider = zeroKysely(schema, kysely)
 
 // Register the database provider for type safety
 declare module '@rocicorp/zero' {
@@ -90,12 +100,17 @@ declare module '@rocicorp/zero' {
 
 ```ts
 // app/api/mutate/db-provider.ts
+import {PrismaPg} from '@prisma/adapter-pg'
+import {PrismaClient} from '@prisma/client'
+import {zeroPrisma} from '@rocicorp/zero/server/adapters/prisma'
+import {schema} from '../../zero/schema.ts'
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
     connectionString: process.env.ZERO_UPSTREAM_DB!
   })
 })
+export const dbProvider = zeroPrisma(schema, prisma)
 
 // Register the database provider for type safety
 declare module '@rocicorp/zero' {
@@ -107,10 +122,14 @@ declare module '@rocicorp/zero' {
 
 ```ts
 // app/api/mutate/db-provider.ts
+import {zeroNodePg} from '@rocicorp/zero/server/adapters/pg'
+import {Pool} from 'pg'
+import {schema} from '../../zero/schema.ts'
 
 const pool = new Pool({
   connectionString: process.env.ZERO_UPSTREAM_DB!
 })
+export const dbProvider = zeroNodePg(schema, pool)
 
 // You can also pass a client instead of a pool:
 //
@@ -130,8 +149,12 @@ declare module '@rocicorp/zero' {
 
 ```ts
 // app/api/mutate/db-provider.ts
+import {zeroPostgresJS} from '@rocicorp/zero/server/adapters/postgresjs'
+import postgres from 'postgres'
+import {schema} from '../../zero/schema.ts'
 
 const sql = postgres(process.env.ZERO_UPSTREAM_DB!)
+export const dbProvider = zeroPostgresJS(schema, sql)
 
 // Register the database provider for type safety
 declare module '@rocicorp/zero' {
@@ -170,6 +193,7 @@ Within your mutators, you can access the underlying transaction via `tx.dbTransa
 
 ```ts
 // mutators.ts
+export const mutators = defineMutators({
   createUser: defineMutator(
     z.object({id: z.string(), name: z.string()}),
     async ({tx, args: {id, name}}) => {
@@ -185,6 +209,7 @@ Within your mutators, you can access the underlying transaction via `tx.dbTransa
 
 ```ts
 // mutators.ts
+export const mutators = defineMutators({
   createUser: defineMutator(
     z.object({id: z.string(), name: z.string()}),
     async ({tx, args: {id, name}}) => {
@@ -201,6 +226,7 @@ Within your mutators, you can access the underlying transaction via `tx.dbTransa
 
 ```ts
 // mutators.ts
+export const mutators = defineMutators({
   createUser: defineMutator(
     z.object({id: z.string(), name: z.string()}),
     async ({tx, args: {id, name}}) => {
@@ -222,6 +248,7 @@ Within your mutators, you can access the underlying transaction via `tx.dbTransa
 
 ```ts
 // mutators.ts
+export const mutators = defineMutators({
   createUser: defineMutator(
     z.object({id: z.string(), name: z.string()}),
     async ({tx, args: {id, name}}) => {
@@ -238,6 +265,7 @@ Within your mutators, you can access the underlying transaction via `tx.dbTransa
 
 ```ts
 // mutators.ts
+export const mutators = defineMutators({
   createUser: defineMutator(
     z.object({id: z.string(), name: z.string()}),
     async ({tx, args: {id, name}}) => {
@@ -286,6 +314,7 @@ For now, we don't recommend using Zero with SSR. Use your framework's recommende
 >
 
 ```tsx
+import {lazy} from 'react'
 
 // Use React lazy to defer loading the ZeroProvider
 const ZeroProvider = lazy(() =>
@@ -304,12 +333,16 @@ function Root() {
 // Mark client-only components
 'use client'
 
+import {ZeroProvider} from '@rocicorp/zero/react'
+
+export default function Root() {
   return (
   )
 }
 ```
 
 ```tsx
+import {clientOnly} from '@solidjs/start'
 
 const ZeroProvider = clientOnly(async () => {
   // Optionally dynamic import to code-split
@@ -318,6 +351,7 @@ const ZeroProvider = clientOnly(async () => {
   }))
 })
 
+export default function Root() {
   return (
   )
 }

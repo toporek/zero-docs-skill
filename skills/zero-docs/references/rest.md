@@ -22,7 +22,11 @@ This pattern works nicely because Zero mutators have more requirements than regu
 
 ```ts
 // app/routes/api/mutators/$.ts
+import {createServerFileRoute} from '@tanstack/react-start/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'zero/mutators'
 
+export const ServerRoute = createServerFileRoute(
   '/api/mutators/$'
 ).methods({
   POST: async ({params, request}) => {

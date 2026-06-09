@@ -13,7 +13,10 @@ Choose the storage adapter you prefer:
 >
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
+import {expoSQLiteStoreProvider} from '@rocicorp/zero/expo-sqlite'
 
+export function RootLayout() {
   return (
     <ZeroProvider
       // ...
@@ -29,7 +32,10 @@ Choose the storage adapter you prefer:
 ```
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
+import {opSQLiteStoreProvider} from '@rocicorp/zero/op-sqlite'
 
+export default function RootLayout() {
   return (
     <ZeroProvider
       // ...

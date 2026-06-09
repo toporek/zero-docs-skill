@@ -11,6 +11,7 @@ To get started, use `createBuilder`.
 If you use [`drizzle-zero`](https://www.npmjs.com/package/drizzle-zero) or [`prisma-zero`](https://www.npmjs.com/package/prisma-zero), this happens automatically and an instance is stored in the `zql` constant exported from `schema.ts`:
 
 ```ts
+import {zql} from 'schema.ts'
 
 // zql.myTable.where(...)
 ```
@@ -20,6 +21,7 @@ Otherwise, create an instance manually:
 ```ts
 // schema.ts
 // ...
+export const zql = createBuilder(schema)
 ```
 
 ## Select
@@ -27,6 +29,7 @@ Otherwise, create an instance manually:
 ZQL queries start by selecting a table. There is no way to select a subset of columns; ZQL queries always return the entire row, if permissions allow it.
 
 ```ts
+import {zql} from 'zero.ts'
 
 // Returns a query that selects all rows and columns from the
 // issue table.
@@ -360,6 +363,7 @@ You can get the TypeScript type of the result of a query using the `QueryResultT
 
 {/* prettier-ignore */}
 ```ts
+import type {QueryResultType} from '@rocicorp/zero'
 
 const complexQuery = zql.issue.related(
   'comments',
@@ -377,6 +381,7 @@ type MyComplexResult = QueryResultType<typeof complexQuery>
 You can get the type of a single row with `QueryRowType`:
 
 ```ts
+import type {QueryRowType} from '@rocicorp/zero'
 
 type MySingleRow = QueryRowType<typeof complexQuery>
 

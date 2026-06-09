@@ -127,6 +127,7 @@ kill_timeout = 300
 ```ts
 /// <reference path="./.sst/platform/config.d.ts" />
 
+export default $config({
   app(input) {
     return {
       name: 'zero',
@@ -440,6 +441,7 @@ kill_timeout = 300
 ```ts
 /// <reference path="./.sst/platform/config.d.ts" />
 
+export default $config({
   app(input) {
     return {
       name: 'zero',

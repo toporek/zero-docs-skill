@@ -4,7 +4,10 @@ Mutators are how you write data with Zero. Here's a simple example:
 
 ```ts
 // src/mutators.ts
+import {defineMutators, defineMutator} from '@rocicorp/zero'
+import {z} from 'zod'
 
+export const mutators = defineMutators({
   updateIssue: defineMutator(
     z.object({
       id: z.string(),
@@ -55,6 +58,7 @@ Create a mutator using `defineMutator`.
 The only required argument is a `MutatorFn`, which must be `async`:
 
 ```ts
+import {defineMutator} from '@rocicorp/zero'
 
 const myMutator = defineMutator(async () => {
   // ...
@@ -181,6 +185,7 @@ tx.mutate.user.delete({
 The `MutatorFn` can take a single `args` parameter. To enable this, pass a _validator_ to `defineMutator`:
 
 ```ts
+import {defineMutator} from '@rocicorp/zero'
 
 const initStats = defineMutator(
   z.object({issueCount: z.number()}),
@@ -297,7 +302,11 @@ const createIssue = defineMutator(
 >   defineMutatorWithType,
 >   defineMutatorsWithType
 > } from '@rocicorp/zero'
+> import type {ZeroContext} from 'context.ts'
+> import type {Schema} from 'schema.ts'
 >
+> import type {DrizzleTransaction} from '@rocicorp/zero/server/adapters/drizzle'
+> import type {drizzleClient} from 'db-provider.ts'
 >
 > const defineMutator = defineMutatorWithType<
 >   Schema,
@@ -312,7 +321,11 @@ const createIssue = defineMutator(
 >   defineMutatorWithType,
 >   defineMutatorsWithType
 > } from '@rocicorp/zero'
+> import type {ZeroContext} from 'context.ts'
+> import type {Schema} from 'schema.ts'
 >
+> import type {KyselyTransaction} from '@rocicorp/zero/server/adapters/kysely'
+> import type {Database} from 'db-provider.ts'
 >
 > const defineMutator = defineMutatorWithType<
 >   Schema,
@@ -327,7 +340,11 @@ const createIssue = defineMutator(
 >   defineMutatorWithType,
 >   defineMutatorsWithType
 > } from '@rocicorp/zero'
+> import type {ZeroContext} from 'context.ts'
+> import type {Schema} from 'schema.ts'
 >
+> import type {PrismaTransaction} from '@rocicorp/zero/server/adapters/prisma'
+> import type {PrismaClient} from '@prisma/client'
 >
 > const defineMutator = defineMutatorWithType<
 >   Schema,
@@ -342,7 +359,10 @@ const createIssue = defineMutator(
 >   defineMutatorWithType,
 >   defineMutatorsWithType
 > } from '@rocicorp/zero'
+> import type {ZeroContext} from 'context.ts'
+> import type {Schema} from 'schema.ts'
 >
+> import type {NodePgTransaction} from '@rocicorp/zero/server/adapters/pg'
 >
 > const defineMutator = defineMutatorWithType<
 >   Schema,
@@ -357,7 +377,10 @@ const createIssue = defineMutator(
 >   defineMutatorWithType,
 >   defineMutatorsWithType
 > } from '@rocicorp/zero'
+> import type {ZeroContext} from 'context.ts'
+> import type {Schema} from 'schema.ts'
 >
+> import type {PostgresJsTransaction} from '@rocicorp/zero/server/adapters/postgresjs'
 >
 > const defineMutator = defineMutatorWithType<
 >   Schema,
@@ -374,6 +397,7 @@ const createIssue = defineMutator(
 The result of `defineMutator` is a `MutatorDefinition`. By itself this isn't super useful. You need to register it using `defineMutators`:
 
 ```ts
+export const mutators = defineMutators({
   issue: {
     update: updateIssue
   }
@@ -383,6 +407,7 @@ The result of `defineMutator` is a `MutatorDefinition`. By itself this isn't sup
 Typically these are done together in one step:
 
 ```ts
+export const mutators = defineMutators({
   issue: {
     update: defineMutator(
       z.object({id: z.string(), title: z.string()}),
@@ -400,6 +425,7 @@ Typically these are done together in one step:
 The result of `defineMutators` is called a `MutatorRegistry`. Each field in the registry is a callable `Mutator` that you can use to perform mutations:
 
 ```ts
+import {mutators} from 'mutators.ts'
 
 zero.mutate(
   mutators.issue.update({
@@ -423,7 +449,11 @@ console.log(mutators.issue.update.mutatorName)
 By convention, mutators are listed in a central `mutators.ts` file. This allows them to be easily used on both the client and server:
 
 ```ts
+import {defineMutators, defineMutator} from '@rocicorp/zero'
+import {zql} from './schema.ts'
+import {z} from 'zod'
 
+export const mutators = defineMutators({
   posts: {
     create: defineMutator(
       z.object({
@@ -475,6 +505,7 @@ As your application grows, you can move mutators to different files to keep them
 
 ```ts
 // posts.ts
+export const postMutators = {
   create: defineMutator(
     z.object({
       id: z.string(),
@@ -491,6 +522,7 @@ As your application grows, you can move mutators to different files to keep them
 }
 
 // user.ts
+export const userMutators = {
   updateRole: defineMutator(
     z.object({
       role: z.string(),
@@ -505,7 +537,10 @@ As your application grows, you can move mutators to different files to keep them
 }
 
 // mutators.ts
+import {postMutators} from 'zero/mutators/posts.ts'
+import {userMutators} from 'zero/mutators/users.ts'
 
+export const mutators = defineMutators{{
   posts: postMutators,
   users: userMutators,
 })
@@ -530,6 +565,9 @@ Before you can use your mutators, you need to register them with Zero:
 >
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from 'zero/mutators.ts'
 
 const opts: ZeroOptions = {
   // ... cacheURL, schema, etc.
@@ -541,6 +579,9 @@ return (
 ```
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/solid'
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from 'zero/mutators.ts'
 
 const opts: ZeroOptions = {
   // ... cacheURL, schema, etc.
@@ -552,6 +593,9 @@ return (
 ```
 
 ```ts
+import {Zero} from '@rocicorp/zero'
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from 'zero/mutators.ts'
 
 const opts: ZeroOptions = {
   // ... cacheURL, schema, etc.
@@ -595,7 +639,13 @@ You can use the `handleMutateRequest` and `mustGetMutator` functions to implemen
 
 ```ts
 // src/routes/api/zero/mutate.ts
+import {createFileRoute} from '@tanstack/react-router'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from 'db-provider.ts'
 
+export const Route = createFileRoute('/api/zero/mutate')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -622,6 +672,10 @@ You can use the `handleMutateRequest` and `mustGetMutator` functions to implemen
 
 ```ts
 // app/api/zero/mutate/route.ts
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from 'db-provider.ts'
 
 export async function POST(request: Request) {
   const result = await handleMutateRequest({
@@ -641,6 +695,11 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/zero/mutate.ts
+import type {APIEvent} from '@solidjs/start/server'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from 'db-provider.ts'
 
 export async function POST(event: APIEvent) {
   const result = await handleMutateRequest({
@@ -660,6 +719,11 @@ export async function POST(event: APIEvent) {
 
 ```ts
 // api/app.ts
+import {Hono} from 'hono'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from './db-provider.ts'
 
 const app = new Hono()
 
@@ -733,6 +797,7 @@ It is also of course possible for the entire push endpoint to return an HTTP err
 >
 
 ```ts
+export const Route = createFileRoute('/api/zero/mutate')({
   server: {
     handlers: {
       POST: async () => {
@@ -807,7 +872,12 @@ To implement server-specific code, just run different mutators in your mutate en
 
 ```ts
 // server-mutators.ts
+import {defineMutators, defineMutator} from '@rocicorp/zero'
+import {z} from 'zod'
+import {zql} from 'schema.ts'
+import {mutators as sharedMutators} from 'mutators.ts'
 
+export const serverMutators = defineMutators(
   sharedMutators,
   {
     posts: {
@@ -860,6 +930,7 @@ const myMutator = defineMutator(async ({tx}) => {
 Once you have registered your mutators, you can invoke them with `zero.mutate`:
 
 ```ts
+import {mutators} from 'mutators.ts'
 
 zero.mutate(
   mutators.issue.update({
@@ -1014,9 +1085,14 @@ However sometimes it's still nice to do a quick and dirty async send as part of 
 
 ```ts
 // server-mutators.ts
+import {defineMutator} from '@rocicorp/zero'
+import z from 'zod'
+import {zql} from 'schema.ts'
+import {mutators as clientMutators} from 'mutators.ts'
 
 // Instead of defining server mutators as a constant,
 // define them as a function of a list of async tasks.
+export function createMutators(
   asyncTasks: Array<() => Promise<void>>
 ) {
   return defineMutators(clientMutators, {
@@ -1048,6 +1124,7 @@ Then in your mutate handler:
 >
 
 ```ts
+export const Route = createFileRoute('/api/zero/mutate')({
   server: {
     handlers: {
       POST: async ({request}) => {

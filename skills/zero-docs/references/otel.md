@@ -44,6 +44,8 @@ To enable this, provide a `getTraceparent` callback when creating your Zero clie
 >
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
+import {propagation, context} from '@opentelemetry/api'
 
 function getTraceparent() {
   const carrier: Record<string, string> = {}
@@ -60,6 +62,8 @@ return (
 ```
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/solid'
+import {propagation, context} from '@opentelemetry/api'
 
 function getTraceparent() {
   const carrier: Record<string, string> = {}
@@ -76,6 +80,8 @@ return (
 ```
 
 ```ts
+import {Zero} from '@rocicorp/zero'
+import {propagation, context} from '@opentelemetry/api'
 
 const zero = new Zero({
   // ... other options

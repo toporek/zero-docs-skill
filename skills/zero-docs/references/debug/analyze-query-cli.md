@@ -16,6 +16,8 @@ Create a small script in your app that imports your schema and calls `runAnalyze
 
 ```ts
 // scripts/analyze.ts
+import {runAnalyzeCLI} from '@rocicorp/zero/analyze'
+import {schema} from '../src/zero/schema.ts'
 
 await runAnalyzeCLI({schema})
 ```

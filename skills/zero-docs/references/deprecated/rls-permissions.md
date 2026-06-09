@@ -23,6 +23,7 @@ type AuthData = {
   sub: string
 }
 
+export const permissions = definePermissions<
   AuthData,
   Schema
 >(schema, () => {
@@ -63,6 +64,7 @@ If you don't specify any rules for an operation, it is denied by default. This i
 To enable full access to an action (i.e., during development) use the `ANYONE_CAN` helper:
 
 ```ts
+import {ANYONE_CAN} from '@rocicorp/zero'
 
 const permissions = definePermissions<AuthData, Schema>(
   schema,
@@ -83,6 +85,7 @@ const permissions = definePermissions<AuthData, Schema>(
 To do this for all actions, use `ANYONE_CAN_DO_ANYTHING`:
 
 ```ts
+import {ANYONE_CAN_DO_ANYTHING} from '@rocicorp/zero'
 
 const permissions = definePermissions<AuthData, Schema>(
   schema,

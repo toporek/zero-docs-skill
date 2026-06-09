@@ -7,9 +7,16 @@ Zero has built-in support for React. Here's what basic usage looks like.
 Use the `ZeroProvider` component to setup Zero. It takes care of creating and destroying `Zero` instances reactively:
 
 ```tsx
+import {createRoot} from 'react-dom/client'
+import {ZeroProvider} from '@rocicorp/zero/react'
+import {useSession} from 'my-session-provider'
+import App from './App.tsx'
+import {schema} from 'schema.ts'
+import {mutators} from 'mutators.ts'
 
 const cacheURL = import.meta.env.VITE_PUBLIC_ZERO_CACHE_URL!
 
+export default function Root() {
   const session = useSession()
   const userID = session?.userID
   const auth = session?.accessToken
@@ -50,6 +57,8 @@ When you pass `zero={zero}`, `ZeroProvider` only provides React Context. It does
 Use `useQuery` to run queries:
 
 ```tsx
+import {useQuery} from '@rocicorp/zero/react'
+import {queries} from 'queries.ts'
 
 function Posts() {
   const [posts] = useQuery(
@@ -73,6 +82,8 @@ For conditional queries, such as queries that depend on auth state or route para
 Use `useZero` to get access to the `Zero` instance, for example to run mutators:
 
 ```tsx
+import {useZero} from '@rocicorp/zero/react'
+import {mutators} from 'mutators.ts'
 
 function CompleteButton({issueID}: {issueID: string}) {
   const zero = useZero()

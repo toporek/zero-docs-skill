@@ -99,6 +99,7 @@ You can also write Zero schemas by hand for full control.
 Use the `table` function to define each table in your Zero schema:
 
 ```tsx
+import {table, string, boolean} from '@rocicorp/zero'
 
 const user = table('user')
   .columns({
@@ -164,6 +165,7 @@ An optional column can store a value of the specified type or `null` to mean _no
 Use the `enumeration` helper to define a column that can only take on a specific set of values. This is most often used alongside an [`enum` Postgres column type](/docs/postgres-support#column-types).
 
 ```tsx
+import {table, string, enumeration} from '@rocicorp/zero'
 
 const user = table('user')
   .columns({
@@ -179,6 +181,7 @@ const user = table('user')
 Use the `json` helper to define a column that stores a JSON-compatible value:
 
 ```tsx
+import {table, string, json} from '@rocicorp/zero'
 
 const user = table('user')
   .columns({
@@ -302,7 +305,9 @@ const commentRelationships = relationships(
 Use `createSchema` to define the entire Zero schema:
 
 ```tsx
+import {createSchema} from '@rocicorp/zero'
 
+export const schema = createSchema({
   tables: [user, medium, message],
   relationships: [
     userRelationships,

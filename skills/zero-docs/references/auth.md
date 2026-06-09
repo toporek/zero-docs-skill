@@ -20,18 +20,22 @@ Your app will already know the logged-in user from whatever auth provider you us
 >
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
 
 return (
 )
 ```
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/solid'
 
 return (
 )
 ```
 
 ```ts
+import {Zero} from '@rocicorp/zero'
+import type {ZeroOptions} from '@rocicorp/zero'
 
 const zero = new Zero({
   userID
@@ -50,12 +54,14 @@ If the user is logged out, omit `userID`, or set to `undefined` / `null`:
 >
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
 
 return (
 )
 ```
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/solid'
 
 return (
 )
@@ -171,7 +177,9 @@ Zero-cache will then forward all cookies sent to `cacheURL` to your [mutators](/
 
 ```ts
 // src/routes/api/zero/query.ts
+import {createFileRoute} from '@tanstack/react-router'
 
+export const Route = createFileRoute('/api/zero/query')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -197,6 +205,7 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/zero/query.ts
+import type {APIEvent} from '@solidjs/start/server'
 
 export async function POST(event: APIEvent) {
   const session = await authenticate(
@@ -208,6 +217,7 @@ export async function POST(event: APIEvent) {
 
 ```ts
 // api/app.ts
+import {Hono} from 'hono'
 
 const app = new Hono()
 
@@ -252,12 +262,14 @@ If you have an opaque auth token, such as a JWT or a token from your auth provid
 >
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
 
 return (
 )
 ```
 
 ```tsx
+import {ZeroProvider} from '@rocicorp/zero/solid'
 
 return (
 )
@@ -284,7 +296,9 @@ Zero will forward this token to your [mutators](/docs/mutators) and [queries](/d
 
 ```ts
 // src/routes/api/zero/query.ts
+import {createFileRoute} from '@tanstack/react-router'
 
+export const Route = createFileRoute('/api/zero/query')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -310,6 +324,7 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/zero/query.ts
+import type {APIEvent} from '@solidjs/start/server'
 
 export async function POST(event: APIEvent) {
   const session = await authenticate(
@@ -321,6 +336,7 @@ export async function POST(event: APIEvent) {
 
 ```ts
 // api/app.ts
+import {Hono} from 'hono'
 
 const app = new Hono()
 
@@ -350,7 +366,13 @@ Create a Context object from the validated credentials and pass it to your [quer
 
 ```ts
 // src/routes/api/zero/query.ts
+import {createFileRoute} from '@tanstack/react-router'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
+export const Route = createFileRoute('/api/zero/query')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -380,6 +402,10 @@ Create a Context object from the validated credentials and pass it to your [quer
 
 ```ts
 // app/api/zero/query/route.ts
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
 export async function POST(request: Request) {
   const session = await authenticate(
@@ -405,6 +431,11 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/zero/query.ts
+import type {APIEvent} from '@solidjs/start/server'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
 export async function POST(event: APIEvent) {
   const session = await authenticate(
@@ -430,6 +461,11 @@ export async function POST(event: APIEvent) {
 
 ```ts
 // api/app.ts
+import {Hono} from 'hono'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
 const app = new Hono()
 
@@ -469,7 +505,13 @@ app.post('/api/zero/query', async c => {
 
 ```ts
 // src/routes/api/zero/mutate.ts
+import {createFileRoute} from '@tanstack/react-router'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from 'db-provider.ts'
 
+export const Route = createFileRoute('/api/zero/mutate')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -501,6 +543,10 @@ app.post('/api/zero/query', async c => {
 
 ```ts
 // app/api/zero/mutate/route.ts
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from 'db-provider.ts'
 
 export async function POST(request: Request) {
   const session = await authenticate(
@@ -528,6 +574,11 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/zero/mutate.ts
+import type {APIEvent} from '@solidjs/start/server'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from 'db-provider.ts'
 
 export async function POST(event: APIEvent) {
   const session = await authenticate(
@@ -555,6 +606,11 @@ export async function POST(event: APIEvent) {
 
 ```ts
 // api/app.ts
+import {Hono} from 'hono'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from 'mutators.ts'
+import {dbProvider} from './db-provider.ts'
 
 const app = new Hono()
 

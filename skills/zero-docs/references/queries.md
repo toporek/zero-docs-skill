@@ -4,7 +4,11 @@ Queries are how you read and sync data with Zero. Here's a simple example:
 
 ```ts
 // src/queries.ts
+import {defineQueries, defineQuery} from '@rocicorp/zero'
+import {z} from 'zod'
+import {zql} from 'schema.ts'
 
+export const queries = defineQueries({
   postsByAuthor: defineQuery(
     z.object({authorID: z.string()}),
     ({args: {authorID}}) =>
@@ -63,6 +67,7 @@ Create a query using `defineQuery`.
 The only required argument is a `QueryFn`, which must return a [ZQL](./zql) expression:
 
 ```ts
+import {zql} from 'schema.ts'
 
 const allPostsQueryDef = defineQuery(() => zql.post)
 ```
@@ -72,6 +77,7 @@ const allPostsQueryDef = defineQuery(() => zql.post)
 The `QueryFn` can take a single `args` parameter. To enable this, pass a _validator_ to `defineQuery`:
 
 ```ts
+import {zql} from 'schema.ts'
 
 const postsByAuthor = defineQuery(
   z.object({authorID: z.string().optional()}),
@@ -96,6 +102,7 @@ We use [Zod](https://zod.dev/) in these examples, but you can use any validation
 The result of `defineQuery` is a `QueryDefinition`. By itself this isn't super useful. You need to register it using `defineQueries`:
 
 ```ts
+export const queries = defineQueries({
   posts: {
     all: allPostsQueryDef
   }
@@ -105,6 +112,7 @@ The result of `defineQuery` is a `QueryDefinition`. By itself this isn't super u
 Typically these are done together in one step:
 
 ```ts
+export const queries = defineQueries({
   posts: {
     all: defineQuery(() => zql.post)
   }
@@ -114,6 +122,8 @@ Typically these are done together in one step:
 The result of `defineQueries` is called a `QueryRegistry`. Each field in the registry is a callable `Query` that you can use to read data:
 
 ```ts
+import {zero} from 'zero.ts'
+import {queries} from 'queries.ts'
 
 const allPosts = await zero.run(queries.posts.all())
 ```
@@ -152,6 +162,8 @@ const myPostsQuery = defineQuery(({ctx: {userID}}) => {
 >   defineQueriesWithType,
 >   defineQueryWithType
 > } from '@rocicorp/zero'
+> import type {Schema} from 'schema.ts'
+> import type {ZeroContext} from 'context.ts'
 >
 > const defineQuery = defineQueryWithType<
 >   Schema,
@@ -165,7 +177,11 @@ const myPostsQuery = defineQuery(({ctx: {userID}}) => {
 By convention, all queries for an application are listed in a central `queries.ts` file. This allows them to be easily used on both the client and server:
 
 ```ts
+import {defineQueries, defineQuery} from '@rocicorp/zero'
+import {z} from 'zod'
+import {zql} from './schema.ts'
 
+export const queries = defineQueries({
   posts: {
     get: defineQuery(z.string(), id =>
       zql.post.where('id', id)
@@ -193,6 +209,7 @@ As your application grows, you can move queries to different files to keep them 
 
 ```ts
 // posts.ts
+export const postQueries = {
   get: defineQuery(z.string(), id =>
     zql.post.where('id', id)
   )
@@ -200,6 +217,7 @@ As your application grows, you can move queries to different files to keep them 
 }
 
 // users.ts
+export const userQueries = {
   byRole: defineQuery(z.string(), role =>
     zql.user.where('role', role)
   )
@@ -207,7 +225,10 @@ As your application grows, you can move queries to different files to keep them 
 }
 
 // queries.ts
+import {postQueries} from './posts.ts'
+import {userQueries} from './users.ts'
 
+export const queries = defineQueries({
   posts: postQueries,
   users: userQueries
 })
@@ -247,7 +268,13 @@ You can use the `handleQueryRequest` and `mustGetQuery` functions to implement t
 
 ```ts
 // src/routes/api/zero/query.ts
+import {createFileRoute} from '@tanstack/react-router'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
+export const Route = createFileRoute('/api/zero/query')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -270,6 +297,10 @@ You can use the `handleQueryRequest` and `mustGetQuery` functions to implement t
 
 ```ts
 // app/api/zero/query/route.ts
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
 export async function POST(request: Request) {
   const result = await handleQueryRequest({
@@ -288,6 +319,11 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/zero/query.ts
+import type {APIEvent} from '@solidjs/start/server'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
 export async function POST(event: APIEvent) {
   const result = await handleQueryRequest({
@@ -306,6 +342,10 @@ export async function POST(event: APIEvent) {
 
 ```ts
 // api/app.ts
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from 'queries.ts'
+import {schema} from 'schema.ts'
 
 app.post('/api/zero/query', async c => {
   const result = await handleQueryRequest({
@@ -403,6 +443,8 @@ The most common way to use queries is with the `useQuery` reactive hooks from th
 >
 
 ```tsx
+import {useQuery} from '@rocicorp/zero/react'
+import {queries} from 'zero/queries.ts'
 
 function App() {
   const [posts] = useQuery(queries.posts.get('user123'))
@@ -413,6 +455,8 @@ function App() {
 ```
 
 ```tsx
+import {useQuery} from '@rocicorp/zero/solid'
+import {queries} from 'zero/queries.ts'
 
 function App() {
   const [posts] = useQuery(() =>
@@ -426,6 +470,8 @@ function App() {
 ```
 
 ```ts
+import {queries} from 'zero/queries.ts'
+import {zero} from 'zero.ts'
 
 const postsView = zero.materialize(
   queries.posts.byAuthorID('user123')
@@ -457,6 +503,8 @@ Both React and Solid support conditional queries by passing `undefined` until th
 >
 
 ```tsx
+import {useQuery} from '@rocicorp/zero/react'
+import {queries} from 'zero/queries.ts'
 
 function Username({userID}: {userID: string | undefined}) {
   const [user] = useQuery(
@@ -472,6 +520,9 @@ function Username({userID}: {userID: string | undefined}) {
 ```
 
 ```tsx
+import {useQuery} from '@rocicorp/zero/solid'
+import {Show} from 'solid-js'
+import {queries} from 'zero/queries.ts'
 
 function Username(props: {userID: string | undefined}) {
   const [user] = useQuery(() =>

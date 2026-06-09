@@ -32,6 +32,7 @@ The current connection state is available in the `zero.connection.state` propert
 >
 
 ```tsx
+import {useConnectionState} from '@rocicorp/zero/react'
 
 function ConnectionStatus() {
   const state = useConnectionState()
@@ -54,6 +55,7 @@ function ConnectionStatus() {
 ```
 
 ```tsx
+import {useConnectionState} from '@rocicorp/zero/solid'
 
 function ConnectionStatus() {
   const state = useConnectionState()
@@ -170,6 +172,7 @@ You can forward connection errors to Sentry (or any error-monitoring tool) by su
 You can wrap `reason` in an `Error` and report it:
 
 ```ts
+import * as Sentry from '@sentry/browser'
 
 zero.connection.state.subscribe(state => {
   if (state.name !== 'error') return

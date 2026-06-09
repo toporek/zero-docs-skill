@@ -280,17 +280,22 @@ Zero has first-class support for React and SolidJS. There is also a low-level AP
 
 ```tsx
 // src/routes/__root.tsx
+import {ZeroProvider} from '@rocicorp/zero/react'
+import type {ZeroOptions} from '@rocicorp/zero'
 import {
   HeadContent,
   Scripts,
   createRootRoute
 } from '@tanstack/react-router'
+import type {ReactNode} from 'react'
+import {schema} from '../zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
   schema
 }
 
+export const Route = createRootRoute({
   shellComponent: RootDocument
 })
 
@@ -311,11 +316,17 @@ function RootDocument({children}: {children: ReactNode}) {
 // src/app/providers.tsx
 'use client'
 
+import {ZeroProvider} from '@rocicorp/zero/react'
+import type {ZeroOptions} from '@rocicorp/zero'
+import type {ReactNode} from 'react'
+import {schema} from '../zero/schema'
+
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
   schema
 }
 
+export function Providers({
   children
 }: {
   children: ReactNode
@@ -324,7 +335,10 @@ const opts: ZeroOptions = {
 }
 
 // src/app/layout.tsx
+import type {ReactNode} from 'react'
+import {Providers} from './providers'
 
+export default function RootLayout({
   children
 }: {
   children: ReactNode
@@ -341,12 +355,20 @@ const opts: ZeroOptions = {
 
 ```tsx
 // src/app.tsx
+import {MetaProvider, Title} from '@solidjs/meta'
+import {Router} from '@solidjs/router'
+import {FileRoutes} from '@solidjs/start/router'
+import {ZeroProvider} from '@rocicorp/zero/solid'
+import type {ZeroOptions} from '@rocicorp/zero'
+import {Suspense} from 'solid-js'
+import {schema} from './zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
   schema
 }
 
+export default function App() {
   return (
       <Router
         root={props => (
@@ -360,6 +382,9 @@ const opts: ZeroOptions = {
 
 ```tsx
 // src/zero.ts
+import {Zero} from '@rocicorp/zero'
+import type {ZeroOptions} from '@rocicorp/zero'
+import {schema} from './zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
@@ -368,6 +393,7 @@ const opts: ZeroOptions = {
 
 const zero = new Zero(opts)
 
+export {zero}
 ```
 
 ## Sync Data
@@ -378,7 +404,11 @@ Let's add a way to sync albums by artist. In Zero, shared reads live in `queries
 
 ```tsx
 // src/zero/queries.ts
+import {defineQueries, defineQuery} from '@rocicorp/zero'
+import {z} from 'zod'
+import {zql} from './schema'
 
+export const queries = defineQueries({
   albums: {
     byArtist: defineQuery(
       z.object({artistId: z.string()}),
@@ -429,7 +459,13 @@ Instead, Zero sends the query name and arguments to the `query` endpoint on your
 
 ```ts
 // src/routes/api/query.ts
+import {createFileRoute} from '@tanstack/react-router'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from '../../zero/queries'
+import {schema} from '../../zero/schema'
 
+export const Route = createFileRoute('/api/query')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -452,6 +488,10 @@ Instead, Zero sends the query name and arguments to the `query` endpoint on your
 
 ```ts
 // src/app/api/query/route.ts
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from '../../../zero/queries'
+import {schema} from '../../../zero/schema'
 
 export async function POST(request: Request) {
   const result = await handleQueryRequest({
@@ -470,6 +510,11 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/query.ts
+import type {APIEvent} from '@solidjs/start/server'
+import {handleQueryRequest} from '@rocicorp/zero/server'
+import {mustGetQuery} from '@rocicorp/zero'
+import {queries} from '../../zero/queries'
+import {schema} from '../../zero/schema'
 
 export async function POST(event: APIEvent) {
   const result = await handleQueryRequest({
@@ -563,7 +608,11 @@ Use the seeded data to fetch albums for The Beatles under `artist_1`.
 
 ```tsx
 // src/routes/index.tsx
+import {createFileRoute} from '@tanstack/react-router'
+import {useQuery} from '@rocicorp/zero/react'
+import {queries} from '../zero/queries'
 
+export const Route = createFileRoute('/')({
   component: Home
 })
 
@@ -588,6 +637,10 @@ function Home() {
 // src/app/page.tsx
 'use client'
 
+import {useQuery} from '@rocicorp/zero/react'
+import {queries} from '../zero/queries'
+
+export default function Page() {
   const [albums] = useQuery(
     queries.albums.byArtist({artistId: 'artist_1'})
   )
@@ -606,7 +659,11 @@ function Home() {
 
 ```tsx
 // src/routes/index.tsx
+import {For} from 'solid-js'
+import {useQuery} from '@rocicorp/zero/solid'
+import {queries} from '../zero/queries'
 
+export default function Home() {
   const [albums] = useQuery(() =>
     queries.albums.byArtist({artistId: 'artist_1'})
   )
@@ -623,6 +680,8 @@ function Home() {
 
 ```tsx
 // src/albums.ts
+import {zero} from './zero'
+import {queries} from './zero/queries'
 
 const albums = await zero.run(
   queries.albums.byArtist({artistId: 'artist_1'})
@@ -650,7 +709,10 @@ Now let's add a write path that inserts a new album:
 
 ```tsx
 // src/zero/mutators.ts
+import {defineMutators, defineMutator} from '@rocicorp/zero'
+import {z} from 'zod'
 
+export const mutators = defineMutators({
   albums: {
     create: defineMutator(
       z.object({
@@ -697,6 +759,9 @@ Register the mutators where you create the Zero client:
 
 ```tsx {3,9}
 // src/routes/__root.tsx
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from '../zero/mutators'
+import {schema} from '../zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
@@ -707,6 +772,9 @@ const opts: ZeroOptions = {
 
 ```tsx {3,9}
 // src/app/providers.tsx
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from '../zero/mutators'
+import {schema} from '../zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
@@ -717,6 +785,9 @@ const opts: ZeroOptions = {
 
 ```tsx {3,9}
 // src/app.tsx
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from './zero/mutators'
+import {schema} from './zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
@@ -727,6 +798,9 @@ const opts: ZeroOptions = {
 
 ```tsx {3,9}
 // src/zero.ts
+import type {ZeroOptions} from '@rocicorp/zero'
+import {mutators} from './zero/mutators'
+import {schema} from './zero/schema'
 
 const opts: ZeroOptions = {
   cacheURL: 'http://localhost:4848',
@@ -749,6 +823,9 @@ First, create a `dbProvider` with `node-postgres`:
 
 ```ts
 // src/zero/db-provider.ts
+import {zeroNodePg} from '@rocicorp/zero/server/adapters/pg'
+import {Pool} from 'pg'
+import {schema} from './schema'
 
 const connectionString = process.env.ZERO_UPSTREAM_DB
 if (!connectionString) {
@@ -758,6 +835,7 @@ if (!connectionString) {
 const pool = new Pool({
   connectionString
 })
+export const dbProvider = zeroNodePg(schema, pool)
 
 // Register global types for mutators on the server
 declare module '@rocicorp/zero' {
@@ -788,7 +866,13 @@ Add the mutate endpoint itself:
 
 ```ts
 // src/routes/api/mutate.ts
+import {createFileRoute} from '@tanstack/react-router'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from '../../zero/mutators'
+import {dbProvider} from '../../zero/db-provider'
 
+export const Route = createFileRoute('/api/mutate')({
   server: {
     handlers: {
       POST: async ({request}) => {
@@ -812,6 +896,10 @@ Add the mutate endpoint itself:
 
 ```ts
 // src/app/api/mutate/route.ts
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from '../../../zero/mutators'
+import {dbProvider} from '../../../zero/db-provider'
 
 export async function POST(request: Request) {
   const result = await handleMutateRequest({
@@ -831,6 +919,11 @@ export async function POST(request: Request) {
 
 ```ts
 // src/routes/api/mutate.ts
+import type {APIEvent} from '@solidjs/start/server'
+import {handleMutateRequest} from '@rocicorp/zero/server'
+import {mustGetMutator} from '@rocicorp/zero'
+import {mutators} from '../../zero/mutators'
+import {dbProvider} from '../../zero/db-provider'
 
 export async function POST(event: APIEvent) {
   const result = await handleMutateRequest({
@@ -939,7 +1032,12 @@ Now add a button to create an album:
 
 ```tsx {3-4,12,17-26,30}
 // src/routes/index.tsx
+import {createFileRoute} from '@tanstack/react-router'
+import {useQuery, useZero} from '@rocicorp/zero/react'
+import {mutators} from '../zero/mutators'
+import {queries} from '../zero/queries'
 
+export const Route = createFileRoute('/')({
   component: Home
 })
 
@@ -977,6 +1075,11 @@ function Home() {
 // src/app/page.tsx
 'use client'
 
+import {useQuery, useZero} from '@rocicorp/zero/react'
+import {mutators} from '../zero/mutators'
+import {queries} from '../zero/queries'
+
+export default function Page() {
   const zero = useZero()
   const [albums] = useQuery(
     queries.albums.byArtist({artistId: 'artist_1'})
@@ -1008,7 +1111,12 @@ function Home() {
 
 ```tsx {3-4,8,13-22,26}
 // src/routes/index.tsx
+import {For} from 'solid-js'
+import {useQuery, useZero} from '@rocicorp/zero/solid'
+import {mutators} from '../zero/mutators'
+import {queries} from '../zero/queries'
 
+export default function Home() {
   const zero = useZero()
   const [albums] = useQuery(() =>
     queries.albums.byArtist({artistId: 'artist_1'})
@@ -1038,6 +1146,9 @@ function Home() {
 
 ```tsx {3,6-13}
 // src/albums.ts
+import {zero} from './zero'
+import {mutators} from './zero/mutators'
+import {queries} from './zero/queries'
 
 const client = await zero.mutate(
   mutators.albums.create({
