@@ -1,0 +1,102 @@
+# React
+
+Zero has built-in support for React. Here's what basic usage looks like.
+
+## Setup
+
+Use the `ZeroProvider` component to setup Zero. It takes care of creating and destroying `Zero` instances reactively:
+
+```tsx
+
+const cacheURL = import.meta.env.VITE_PUBLIC_ZERO_CACHE_URL!
+
+  const session = useSession()
+  const userID = session?.userID
+  const auth = session?.accessToken
+  const context = userID ? {userID} : undefined
+
+  return (
+    <ZeroProvider
+      {...{
+        userID,
+        auth,
+        context,
+        cacheURL,
+        schema,
+        mutators
+      }}
+    >
+  )
+}
+```
+
+If you use token auth, pass it with `auth={session?.jwt}`. If you use cookie auth, omit the parameter entirely.
+
+When `auth` changes from one string to another, `ZeroProvider` refreshes auth in place with `zero.connection.connect({auth})`. When `auth` is added or removed, or `userID` changes, it recreates the `Zero` instance.
+
+When the user is logged out, omit the `userID` entirely.
+
+You can also pass a `Zero` instance to the `ZeroProvider` if you want to control the lifecycle of the `Zero` instance yourself:
+
+```tsx
+// ZeroProvider just sets up the context, it doesn't manage
+// the lifecycle of the Zero instance.
+```
+
+When you pass `zero={zero}`, `ZeroProvider` only provides React Context. It does not manage auth updates for that instance, so if you are using token auth, call `zero.connection.connect({auth: newToken})` yourself or recreate the instance when the user changes.
+
+## Usage
+
+Use `useQuery` to run queries:
+
+```tsx
+
+function Posts() {
+  const [posts] = useQuery(
+    queries.posts.byStatus({status: 'draft'})
+  )
+
+  return (
+    <>
+      {posts.map(p => (
+        <div key={p.id}>
+          {p.title} ({p.comments.length} comments)
+        </div>
+      ))}
+    </>
+  )
+}
+```
+
+For conditional queries, such as queries that depend on auth state or route params that may not be loaded yet, see [Conditional Queries](/docs/queries#conditionally).
+
+Use `useZero` to get access to the `Zero` instance, for example to run mutators:
+
+```tsx
+
+function CompleteButton({issueID}: {issueID: string}) {
+  const zero = useZero()
+
+  const onClick = () => {
+    zero.mutate(mutators.issues.complete({id: issueID}))
+  }
+
+  return <button onClick={onClick}>Complete Issue</button>
+}
+```
+
+## Suspense
+
+The `useSuspenseQuery` hook is exactly like `useQuery`, except it supports React Suspense.
+
+```tsx
+const [issues] = useSuspenseQuery(issueQuery, {
+  suspendUntil: 'complete' // 'partial' or 'complete'
+})
+```
+
+Use the `suspendUntil` parameter to control how long to suspend for. The value `complete` suspends until authoritative results from the server are received. The `partial` value suspends until any non-empty data is received, or for a empty result that is `complete`.
+
+## Examples
+
+See [the sample directory](/docs/samples) for more complete React examples.

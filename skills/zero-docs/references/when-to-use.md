@@ -1,0 +1,69 @@
+# When To Use Zero
+
+Every tool has tradeoffs. This page will help you understand if Zero is a good fit for what you're building.
+
+## Zero Might be a Good Fit
+
+### You want to sync only a small subset of data to client
+
+Zero's query-driven sync is a powerful solution for partial sync. You can define the data you want to sync with a set of Zero queries. By using partial sync, Zero apps can commonly load in < 1s, yet still maintain the interaction perf of sync.
+
+### You need fine-grained read or write permissions
+
+Zero's [mutators](/docs/mutators) allow you to run arbitrary authorization, validation, or business logic on the write path. You can enforce that a write depends on what group a user is in, what has been shared with them, their role, etc. [Read permissions](/docs/auth#read-permissions) are very expressive, allowing similar control over what data is synced to the client.
+
+### You are building a traditional client-server web app
+
+Zero was designed from the ground up to be as close to a classic web app as a sync engine can be. If you have a traditional web app, you can try Zero side-by-side with your existing REST or GraphQL API, and incrementally migrate over time.
+
+### You use PostgreSQL
+
+Some tools in our space require you to use a non-standard backend database or data model. Zero works with PostgreSQL, and uses your existing schema.
+
+### Your app is broadly "like Linear"
+
+Zero is currently best suited for productivity apps with lots of interactivity.
+
+### Interaction performance is very important to you
+
+Zero was built by people obsessed with interaction performance. If you share this goal you'll be going with the grain of Zero's design choices.
+
+## Zero Might Not be a Good Fit
+
+### You need the privacy or data ownership benefits of local-first
+
+Zero is not [local-first](https://www.inkandswitch.com/essay/local-first/). It's a client-server system with an authoritative server.
+
+### You need to support offline writes or long periods offline
+
+Zero doesn't support [offline writes](./connection#offline).
+
+### You are building a native mobile app
+
+Zero is written in TypeScript and only supports TypeScript clients.
+
+### The total backend dataset is > ~100GB
+
+Zero stores a replica of your database (at least the subset you want to be syncable to clients) in a SQLite database owned by zero-cache.
+
+Zero's query engine is built assuming very fast local access to this replica (i.e., attached NVMe). But other setups are technically supported and work for smaller data.
+
+The ultimate size limit on the database that Zero can work with is the size limit of this SQLite database. So [up to 45TB on EC2](https://aws.amazon.com/ec2/instance-types/) at time of writing.
+
+However, most of our customers today use Zero with smaller datasets. We currently recommend Zero for use with datasets less than 100GB. If you want to work with larger datasets, please [reach out](https://discord.rocicorp.dev) and we can talk it through with you.
+
+## Zero Might Not be a Good Fit **Yet**
+
+Please see [our roadmap](/docs/status#roadmap) for high-priority upcoming Zero features.
+
+## Alternatives
+
+If Zero isn't right for you, here are some good alternatives to consider:
+
+- [Automerge](https://automerge.org/): Local-first, CRDT-based solution. Pioneering branch-based offline support.
+- [Convex](https://www.convex.dev/): Not a sync engine (reads and writes are server-first), but a very nice reactive database that is in GA.
+- [Ditto](https://www.ditto.com/): CRDT-based, with high quality offline support.
+- [Electric](https://electric-sql.com/): Postgres-based sync engine with a SaaS cloud.
+- [LiveStore](https://livestore.dev/): Interesting event sourced design from one of the founders of Prisma.
+- [Jazz](https://jazz.tools/): Batteries-included local-first.
+- [PowerSync](https://powersync.com/): Sync engine that works with Postgres, MySQL, and MongoDB.

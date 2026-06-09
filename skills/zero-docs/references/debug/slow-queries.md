@@ -1,0 +1,46 @@
+# Slow Queries
+
+In the `zero-cache` logs, you may see statements indicating a query is slow:
+
+```shell
+hash=3rhuw19xt9vry transformationHash=1nv7ot74gxfl7
+Slow query materialization 325.46865100000286
+```
+
+Or, you may just notice queries taking longer than expected in the UI. Here are some tips to help debug such slow queries.
+
+## Analyze Queries
+
+Use the [inspector](/docs/debug/inspector#analyzing-queries) or [analyze query CLI](/docs/debug/analyze-query-cli) to analyze queries and get detailed information about the query plan and performance.
+
+## Check `ttl`
+
+If you are seeing unexpected UI flicker when moving between views, it is possible that the queries backing these views have a `ttl` of `never`. Set the `ttl` to something like `5m` to [keep data cached across navigations](/docs/queries#query-caching).
+
+You may alternately want to [preload some data](/docs/queries#running-queries) at app startup.
+
+Conversely, if you are setting `ttl` to long values, then you may have many backgrounded queries running that the app is not using. You can see which queries are running using the [inspector](./inspector). Ensure that only expected queries are running.
+
+## Locality
+
+If you see log lines like:
+
+```shell
+flushed cvr ... (124ms)
+```
+
+this indicates that `zero-cache` is likely deployed too far away from your [CVR database](/docs/self-host#networking). If you did not configure a CVR database URL then this will be your product's Postgres DB. A slow CVR flush can slow down Zero, since it must complete the flush before sending query result(s) to clients.
+
+Try moving `zero-cache` to be deployed as close as possible to the CVR database.
+
+## Check Storage
+
+`zero-cache` is effectively a database. It requires fast (low latency and high bandwidth) disk access to perform well. If you're running on network attached storage with high latency, or on AWS with low IOPS, then this is the most likely culprit.
+
+Some hosting providers scale IOPS with vCPU. Increasing the vCPU will increase storage throughput and likely resolve the issue.
+
+Fly.io provides physically attached SSDs, even for their smallest VMs. Deploying zero-cache there (or any other provider that offers physically attached SSDs) is another option.
+
+## /statz
+
+`zero-cache` makes some internal health statistics available via the `/statz` endpoint of `zero-cache`. In order to access this, you must configure an [admin password](/docs/zero-cache-config#admin-password).

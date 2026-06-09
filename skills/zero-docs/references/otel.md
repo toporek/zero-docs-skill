@@ -1,0 +1,171 @@
+# OpenTelemetry
+
+The `zero-cache` service embeds the [JavaScript OTLP Exporter](https://opentelemetry.io/docs/languages/js/) and can send logs, traces, and metrics to any [standard otel collector](https://opentelemetry.io/).
+
+To enable otel, set the following environment variables then run `zero-cache` as normal:
+
+```sh
+OTEL_EXPORTER_OTLP_ENDPOINT="<your otel endpoint>"
+OTEL_EXPORTER_OTLP_HEADERS="<auth headers from your otel collector>"
+OTEL_RESOURCE_ATTRIBUTES="<resource attributes from your otel collector>"
+OTEL_NODE_RESOURCE_DETECTORS="env,host,os"
+```
+
+## Grafana Cloud Walkthrough
+
+Here are instructions to setup [Grafana Cloud](https://grafana.com/oss/grafana/), but the setup for other otel collectors should be similar.
+
+1. Sign up for [Grafana Cloud (Free Tier)](https://grafana.com/auth/sign-up/create-user?pg=login)
+2. Click Connections > Add Connection in the left sidebar
+   ![add-connection](/images/debugging/otel/add-connection.png)
+3. Search for "OpenTelemetry" and select it
+4. Click "Quickstart"
+   ![quickstart](/images/debugging/otel/quickstart.png)
+5. Select "JavaScript"
+   ![javascript](/images/debugging/otel/javascript.png)
+6. Create a new token
+7. Copy the environment variables into your `.env` file or similar
+   ![copy-env](/images/debugging/otel/env.png)
+8. Start `zero-cache`
+9. Look for logs under "Drilldown" > "Logs" in left sidebar
+
+## Distributed Tracing
+
+You can enable end-to-end trace correlation from your frontend through zero-cache to your API server. This allows you to see the full request flow in your tracing UI.
+
+To enable this, provide a `getTraceparent` callback when creating your Zero client:
+
+<CodeGroup
+  labels={[
+    {text: 'React', sync: {client: 'react'}},
+    {text: 'SolidJS', sync: {client: 'solidjs'}},
+    {text: 'TypeScript', sync: {client: 'typescript'}},
+  ]}
+>
+
+```tsx
+
+function getTraceparent() {
+  const carrier: Record<string, string> = {}
+  propagation.inject(context.active(), carrier)
+  return carrier.traceparent
+}
+
+return (
+  <ZeroProvider
+    /* ... other options ... */
+    getTraceparent={getTraceparent}
+  >
+)
+```
+
+```tsx
+
+function getTraceparent() {
+  const carrier: Record<string, string> = {}
+  propagation.inject(context.active(), carrier)
+  return carrier.traceparent
+}
+
+return (
+  <ZeroProvider
+    /* ... other options ... */
+    getTraceparent={getTraceparent}
+  >
+)
+```
+
+```ts
+
+const zero = new Zero({
+  // ... other options
+  getTraceparent: () => {
+    const carrier: Record<string, string> = {}
+    propagation.inject(context.active(), carrier)
+    return carrier.traceparent
+  }
+})
+```
+
+This callback is called before sending WebSocket messages that trigger API server calls (`push`, `changeDesiredQueries`, `initConnection`). The returned [W3C `traceparent`](https://www.w3.org/TR/trace-context/#traceparent-header) header is forwarded through zero-cache to your API server, where it can be used to continue the trace.
+
+## Metrics Reference
+
+<style>{`
+.metrics-reference ~ h3 + table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.metrics-reference ~ h3 + table td code { word-break: break-all; }
+
+.metrics-reference ~ h3 + table th:nth-child(1),
+.metrics-reference ~ h3 + table td:nth-child(1) { width: 175px;}
+.metrics-reference ~ h3 + table th:nth-child(2),
+.metrics-reference ~ h3 + table td:nth-child(2) { width: 100px; }
+.metrics-reference ~ h3 + table th:nth-child(3),
+.metrics-reference ~ h3 + table td:nth-child(3) { width: 65px; }
+`}</style>
+
+<div className="metrics-reference" />
+
+### zero.server
+
+| Metric   | Type  | Unit | Description                                               |
+| -------- | ----- | ---- | --------------------------------------------------------- |
+| `uptime` | Gauge | s    | Cumulative uptime, starting from when requests are served |
+
+### zero.replica
+
+| Metric       | Type  | Unit  | Description                                                                                                             |
+| ------------ | ----- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
+| `db_size`    | Gauge | bytes | Size of the replica's main db file (excludes WAL)                                                                       |
+| `wal_size`   | Gauge | bytes | Size of the replica's WAL file                                                                                          |
+| `wal2_size`  | Gauge | bytes | Size of the replica's WAL2 file (only if using wal2 mode)                                                               |
+| `backup_lag` | Gauge | ms    | Time since last litestream backup. Expected to sawtooth from 0 to `ZERO_LITESTREAM_INCREMENTAL_BACKUP_INTERVAL_MINUTES` |
+
+### zero.replication
+
+| Metric         | Type    | Unit | Description                                                                            |
+| -------------- | ------- | ---- | -------------------------------------------------------------------------------------- |
+| `upstream_lag` | Gauge   | ms   | Latency from sending a replication report to receiving it in the stream                |
+| `replica_lag`  | Gauge   | ms   | Latency from receiving a replication report to it reaching the replica                 |
+| `total_lag`    | Gauge   | ms   | End-to-end replication latency. Grows as an estimate if the next report hasn't arrived |
+| `events`       | Counter |      | Number of replication events processed                                                 |
+| `transactions` | Counter |      | Count of replicated transactions                                                       |
+| `shadow-sync-runs`     | Counter   |    | Number of [shadow initial-sync](/docs/zero-cache-config#shadow-sync-enabled) runs. Has a `result` attribute: `success`, `error` |
+| `shadow-sync-duration` | Histogram | s  | Wall-clock duration of a shadow initial-sync run. Has a `result` attribute: `success`, `error`                                  |
+
+### zero.sync
+
+| Metric                              | Type          | Unit | Description                                                                                                                                       |
+| ----------------------------------- | ------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `max-protocol-version`              | Gauge         |      | Highest sync protocol version seen from connecting clients                                                                                        |
+| `active-clients`                    | UpDownCounter |      | Number of currently connected sync clients                                                                                                        |
+| `active-client-groups`              | Gauge         |      | Number of active ViewSyncerService instances in a syncer worker                                                                                   |
+| `queries`                           | Gauge         |      | Active IVM pipelines across all client groups in a syncer worker                                                                                  |
+| `rows`                              | Gauge         |      | CVR-tracked rows across all client groups in a syncer worker                                                                                      |
+| `lock-wait-time`                    | Histogram     | s    | Time spent waiting to acquire the ViewSyncerService lock per operation                                                                            |
+| `pipeline-resets`                   | Counter       |      | Count of pipeline resets. Has a `reason` attribute: `advancement-timeout`, `scalar-subquery`, `schema-change`, `truncation`, `permissions-change` |
+| `hydration`                         | Counter       |      | Number of query hydrations                                                                                                                        |
+| `hydration-time`                    | Histogram     | s    | Time to hydrate a query                                                                                                                           |
+| `advance-time`                      | Histogram     | s    | Time to advance all queries for a client group after applying a transaction                                                                       |
+| `poke.time`                         | Histogram     | s    | Time per poke transaction (excludes canceled/noop pokes)                                                                                          |
+| `poke.transactions`                 | Counter       |      | Count of poke transactions                                                                                                                        |
+| `poke.rows`                         | Counter       |      | Count of poked rows                                                                                                                               |
+| `cvr.flush-time`                    | Histogram     | s    | Time to flush a CVR transaction                                                                                                                   |
+| `cvr.rows-flushed`                  | Counter       |      | Number of changed rows flushed to a CVR                                                                                                           |
+| `ivm.advance-time`                  | Histogram     | s    | Time to advance IVM queries in response to a single change                                                                                        |
+| `ivm.conflict-rows-deleted`         | Counter       |      | Rows deleted because they conflicted with an added row                                                                                            |
+| `query.transformations`             | Counter       |      | Number of query transformations performed                                                                                                         |
+| `query.transformation-time`         | Histogram     | s    | Time to transform custom queries via API server                                                                                                   |
+| `query.transformation-hash-changes` | Counter       |      | Times a query transformation hash changed                                                                                                         |
+| `query.transformation-no-ops`       | Counter       |      | Times a query transformation was a no-op                                                                                                          |
+
+### zero.mutation
+
+| Metric   | Type    | Unit | Description                          |
+| -------- | ------- | ---- | ------------------------------------ |
+| `crud`   | Counter |      | Number of CRUD mutations processed   |
+| `custom` | Counter |      | Number of custom mutations processed |
+| `pushes` | Counter |      | Number of pushes processed           |

@@ -1,0 +1,63 @@
+# Previews
+
+Most teams deploying to platforms like Vercel use unique hostnames per preview build. Zero supports this directly, and you do not need one `zero-cache` instance per preview deployment.
+
+## Overview
+
+Preview support has two parts:
+
+1. Configure `zero-cache` with allowed URL patterns for both query and mutate endpoints.
+2. In the browser, pick the concrete `queryURL` and `mutateURL` based on the current hostname when constructing `Zero`.
+
+You must do this for both endpoints.
+
+## Configure Allowed Endpoint Patterns
+
+Set `ZERO_QUERY_URL` and `ZERO_MUTATE_URL` to include your production URL and your preview URL pattern:
+
+```bash
+ZERO_QUERY_URL="https://myapp.com/api/zero/query,https://my-app-*.preview.myapp.com/api/zero/query"
+ZERO_MUTATE_URL="https://myapp.com/api/zero/mutate,https://my-app-*.preview.myapp.com/api/zero/mutate"
+```
+
+`zero-cache` will only allow client-selected URLs that match one of the configured values/patterns.
+
+## Choose Endpoint URLs in the Client
+
+When you construct `Zero` on the client, derive URLs from `location.origin` and pass both `queryURL` and `mutateURL`:
+
+```ts
+function getZeroEndpoints() {
+  const origin = location.origin
+  return {
+    queryURL: `${origin}/api/zero/query`,
+    mutateURL: `${origin}/api/zero/mutate`
+  }
+}
+
+const {queryURL, mutateURL} = getZeroEndpoints()
+
+const zero = new Zero({
+  schema,
+  userID,
+  auth,
+  queryURL,
+  mutateURL
+})
+```
+
+For full URL pattern syntax details, see [Queries URL Patterns](/docs/queries#url-patterns).
+
+## Schema Changes in Previews
+
+If a preview includes a schema change, you should implement the schema change **first** and do it in the same backwards-compatible way documented in [Schema Changes](/docs/schema#schema-changes) (`expand → migrate → contract`). After that, implement the rest of the preview behavior.
+
+In practice, this means:
+
+1. Apply the compatible schema expansion first.
+2. Ship the preview app/API behavior as a preview, using the new schema.
+3. Run contract cleanup later, after old clients are gone.
+
+If desired, previews can share a single staging database.
+
+Neon-style per-preview database branching is not well supported with Zero today, because each upstream database typically needs its own `zero-cache`.

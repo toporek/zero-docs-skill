@@ -1,0 +1,478 @@
+# ZQL
+
+Inspired by SQL, ZQL is expressed in TypeScript with heavy use of the builder pattern. If you have used [Drizzle](https://orm.drizzle.team/) or [Kysely](https://kysely.dev/), ZQL will feel familiar.
+
+ZQL queries are composed of one or more _clauses_ that are chained together into a _query_.
+
+## Create a Builder
+
+To get started, use `createBuilder`.
+
+If you use [`drizzle-zero`](https://www.npmjs.com/package/drizzle-zero) or [`prisma-zero`](https://www.npmjs.com/package/prisma-zero), this happens automatically and an instance is stored in the `zql` constant exported from `schema.ts`:
+
+```ts
+
+// zql.myTable.where(...)
+```
+
+Otherwise, create an instance manually:
+
+```ts
+// schema.ts
+// ...
+```
+
+## Select
+
+ZQL queries start by selecting a table. There is no way to select a subset of columns; ZQL queries always return the entire row, if permissions allow it.
+
+```ts
+
+// Returns a query that selects all rows and columns from the
+// issue table.
+zql.issue
+```
+
+This is a design tradeoff that allows Zero to better reuse the row locally for future queries. This also makes it easier to share types between different parts of the code.
+
+> **Data returned from ZQL should be considered immutable**
+>
+> This means you should not modify the data directly. Instead, clone the data and modify the clone.
+>
+> ZQL caches values and returns them multiple times. If you modify a value returned from ZQL, you will modify it everywhere it is used. This can lead to subtle bugs.
+>
+> JavaScript and TypeScript lack true immutable types so we use `readonly` to help enforce it. But it's easy to cast away the `readonly` accidentally.
+
+## Ordering
+
+You can sort query results by adding an `orderBy` clause:
+
+```tsx
+zql.issue.orderBy('created', 'desc')
+```
+
+Multiple `orderBy` clauses can be present, in which case the data is sorted by those clauses in order:
+
+```tsx
+// Order by priority descending. For any rows with same priority,
+// then order by created desc.
+zql.issue
+  .orderBy('priority', 'desc')
+  .orderBy('created', 'desc')
+```
+
+All queries in ZQL have a default final order of their primary key. Assuming the `issue` table has a primary key on the `id` column, then:
+
+```tsx
+// Actually means: zql.issue.orderBy('id', 'asc');
+zql.issue
+
+// Actually means: zql.issue.orderBy('priority', 'desc').orderBy('id', 'asc');
+zql.issue.orderBy('priority', 'desc')
+```
+
+## Limit
+
+You can limit the number of rows to return with `limit()`:
+
+```tsx
+zql.issue.orderBy('created', 'desc').limit(100)
+```
+
+## Paging
+
+You can start the results at or after a particular row with `start()`:
+
+{/* prettier-ignore */}
+```tsx
+let start: IssueRow | undefined
+while (true) {
+  let q = zql.issue
+    .orderBy('created', 'desc')
+    .limit(100)
+  if (start) {
+    q = q.start(start)
+  }
+  const batch = await q.run()
+  console.log('got batch', batch)
+
+  if (batch.length < 100) {
+    break
+  }
+  start = batch[batch.length - 1]
+}
+```
+
+By default `start()` is _exclusive_ - it returns rows starting **after** the supplied reference row. This is what you usually want for paging. If you want _inclusive_ results, you can do:
+
+```tsx
+zql.issue.start(row, {inclusive: true})
+```
+
+## Getting a Single Result
+
+If you want exactly zero or one results, use the `one()` clause. This causes ZQL to return `Row|undefined` rather than `Row[]`.
+
+{/* prettier-ignore */}
+```tsx
+const result = await zql.issue
+  .where('id', 42)
+  .one()
+  .run()
+if (!result) {
+  console.error('not found')
+}
+```
+
+`one()` overrides any `limit()` clause that is also present.
+
+## Relationships
+
+You can query related rows using _relationships_ that are defined in your [Zero schema](/docs/schema).
+
+```tsx
+// Get all issues and their related comments
+zql.issue.related('comments')
+```
+
+Relationships are returned as hierarchical data. In the above example, each row will have a `comments` field, which is an array of the corresponding comments rows.
+
+You can fetch multiple relationships in a single query:
+
+```tsx
+zql.issue
+  .related('comments')
+  .related('reactions')
+  .related('assignees')
+```
+
+### Refining Relationships
+
+By default all matching relationship rows are returned, but this can be refined. The `related` method accepts an optional second function which is itself a query.
+
+```tsx
+zql.issue.related(
+  'comments',
+  // It is common to use the 'q' shorthand variable for this parameter,
+  // but it is a _comment_ query in particular here, exactly as if you
+  // had done zql.comment.
+  q =>
+    q
+      .orderBy('modified', 'desc')
+      .limit(100)
+      .start(lastSeenComment)
+)
+```
+
+This _relationship query_ can have all the same clauses that top-level queries can have.
+
+> **Order and limit not supported in junction relationships**
+>
+> Using `orderBy` or `limit` in a relationship that goes through a junction table (i.e., a many-to-many relationship) is not currently supported and will throw a runtime error. See [bug 3527](https://bugs.rocicorp.dev/issue/3527).
+>
+> You can sometimes work around this by making the junction relationship explicit, depending on your schema and usage.
+
+### Nested Relationships
+
+You can nest relationships arbitrarily:
+
+```tsx
+// Get all issues, first 100 comments for each (ordered by modified,desc),
+// and for each comment all of its reactions.
+zql.issue.related('comments', q =>
+  q
+    .orderBy('modified', 'desc')
+    .limit(100)
+    .related('reactions')
+)
+```
+
+## Where
+
+You can filter a query with `where()`:
+
+```tsx
+zql.issue.where('priority', '=', 'high')
+```
+
+The first parameter is always a column name from the table being queried. TypeScript completion will offer available options (sourced from your [Zero Schema](/docs/schema)).
+
+### Comparison Operators
+
+Where supports the following comparison operators:
+
+| Operator                                 | Allowed Operand Types         | Description                                                              |
+| ---------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
+| `=` , `!=`                               | boolean, number, string       | JS strict equal (===) semantics                                          |
+| `<` , `<=`, `>`, `>=`                    | number                        | JS number compare semantics                                              |
+| `LIKE`, `NOT LIKE`, `ILIKE`, `NOT ILIKE` | string                        | SQL-compatible `LIKE` / `ILIKE`                                          |
+| `IN` , `NOT IN`                          | boolean, number, string       | RHS must be array. Returns true if rhs contains lhs by JS strict equals. |
+| `IS` , `IS NOT`                          | boolean, number, string, null | Same as `=` but also works for `null`                                    |
+
+TypeScript will restrict you from using operators with types that don’t make sense – you can’t use `>` with `boolean` for example.
+
+> **Don't see the operator you need?**
+>
+> [Let us know](https://discord.rocicorp.dev/)! Many are
+>   easy to add.
+
+### Equals is the Default Comparison Operator
+
+Because comparing by `=` is so common, you can leave it out and `where` defaults to `=`.
+
+```tsx
+zql.issue.where('priority', 'high')
+```
+
+### Comparing to `null`
+
+As in SQL, ZQL’s `null` cannot be compared with `=`, `!=`, `<`, or any other normal comparison operator. Comparing any value to `null` with such operators is always false:
+
+| Comparison     | Result  |
+| -------------- | ------- |
+| `42 = null`    | `false` |
+| `42 < null`    | `false` |
+| `42 > null`    | `false` |
+| `42 != null`   | `false` |
+| `null = null`  | `false` |
+| `null != null` | `false` |
+
+These semantics feel a bit weird, but they are consistent with SQL. The reason SQL does it this way is to make join semantics work: if you’re joining `employee.orgID` on `org.id` you do **not** want an employee in no organization to match an org that hasn’t yet been assigned an ID.
+
+For when you purposely do want to compare to `null` ZQL supports `IS` and `IS NOT` operators that also work just like in SQL:
+
+```ts
+// Find employees not in any org.
+zql.employee.where('orgID', 'IS', null)
+
+// Find employees in an org other than 42 OR employees in NO org
+zql.employee.where('orgID', 'IS NOT', 42)
+```
+
+TypeScript will prevent you from comparing to `null` with other operators.
+
+### Comparing to `undefined`
+
+As a convenience, you can pass `undefined` to `where`:
+
+```ts
+zql.issue.where('priority', issue?.priority)
+```
+
+This comparison is always false, so the above query always returns no results.
+
+### Compound Filters
+
+The argument to `where` can also be a callback that returns a complex expression:
+
+```tsx
+// Get all issues that have priority 'critical' or else have both
+// priority 'medium' and not more than 100 votes.
+zql.issue.where(({cmp, and, or, not}) =>
+  or(
+    cmp('priority', 'critical'),
+    and(
+      cmp('priority', 'medium'),
+      not(cmp('numVotes', '>', 100))
+    )
+  )
+)
+```
+
+`cmp` is short for _compare_ and works the same as `where` at the top-level except that it can’t be chained and it only accepts comparison operators (no relationship filters – see below).
+
+Note that chaining `where()` is also a one-level `and`:
+
+{/* prettier-ignore */}
+```tsx
+// Find issues with priority 3 or higher, owned by aa
+zql.issue
+  .where('priority', '>=', 3)
+  .where('owner', 'aa')
+```
+
+### Comparing Literal Values
+
+The `where` clause always expects its first parameter to be a column name as a string. Same with the `cmp` helper:
+
+```ts
+// "foo" is a column name, not a string:
+zql.issue.where('foo', 'bar')
+
+// "foo" is a column name, not a string:
+zql.issue.where(({cmp}) => cmp('foo', 'bar'))
+```
+
+To compare to a literal value, use the `cmpLit` helper:
+
+```ts
+zql.issue.where(cmpLit('foobar', 'foo' + 'bar'))
+```
+
+This is particularly useful for implementing [permissions](/docs/auth#read-permissions), because the first parameter can be a field of your [context](/docs/auth#context):
+
+```ts
+zql.issue.where(cmpLit(ctx.role, 'admin'))
+```
+
+### Relationship Filters
+
+Your filter can also test properties of relationships. Currently the only supported test is existence:
+
+```tsx
+// Find all orgs that have at least one employee
+zql.organization.whereExists('employees')
+```
+
+The argument to `whereExists` is a relationship, so just like other relationships, it can be refined with a query:
+
+```tsx
+// Find all orgs that have at least one cool employee
+zql.organization.whereExists('employees', q =>
+  q.where('location', 'Hawaii')
+)
+```
+
+As with querying relationships, relationship filters can be arbitrarily nested:
+
+```tsx
+// Get all issues that have comments that have reactions
+zql.issue.whereExists('comments', q =>
+  q.whereExists('reactions')
+)
+```
+
+The `exists` helper is also provided which can be used with `and`, `or`, `cmp`, and `not` to build compound filters that check relationship existence:
+
+```tsx
+// Find issues that have at least one comment or are high priority
+zql.issue.where({cmp, or, exists} =>
+  or(
+    cmp('priority', 'high'),
+    exists('comments'),
+  ),
+)
+```
+
+## Type Helpers
+
+You can get the TypeScript type of the result of a query using the `QueryResultType` helper:
+
+{/* prettier-ignore */}
+```ts
+
+const complexQuery = zql.issue.related(
+  'comments',
+  q => q.related('author')
+)
+type MyComplexResult = QueryResultType<typeof complexQuery>
+
+// MyComplexResult is: readonly IssueRow & {
+//   readonly comments: readonly (CommentRow & {
+//     readonly author: readonly AuthorRow|undefined;
+//   })[];
+// }[]
+```
+
+You can get the type of a single row with `QueryRowType`:
+
+```ts
+
+type MySingleRow = QueryRowType<typeof complexQuery>
+
+// MySingleRow is: readonly IssueRow & {
+//   readonly comments: readonly (CommentRow & {
+//     readonly author: readonly AuthorRow|undefined;
+//   })[];
+// }
+```
+
+## Planning
+
+Zero automatically plans queries, selecting the best indexes and join orders in most cases.
+
+### Inspecting Query Plans
+
+You can inspect the plan that Zero generates for any ZQL query [using the inspector](/docs/debug/inspector#analyzing-queries).
+
+### Manually Flipping Joins
+
+The process Zero uses to optimize joins is called "join flipping", because it involves "flipping" the order of joins to minimize the number of rows processed.
+
+Typically the Zero planner will pick the joins to flip automatically. But in some rare cases, you may want to manually specify the join order. This can be done by passing the `flip:true` option to `whereExists`:
+
+```tsx
+// Find the first 100 documents that user 42 can edit,
+// ordered by created desc. Because each user is an editor
+// of only a few documents, flip:true is much faster than
+// flip:false.
+zql.documents.whereExists('editors',
+    e => e.where('userID', 42),
+    {flip: true}
+  ),
+  .orderBy('created', 'desc')
+  .limit(100)
+```
+
+Or with `exists`:
+
+```tsx
+// Find issues created by user 42 or that have a comment
+// by user 42. Because user 42 has commented on only a
+// few issues, flip:true is much faster than flip:false.
+zql.issue.where({cmp, or, exists} =>
+  or(
+    cmp('creatorID', 42),
+    exists('comments',
+      c => c.where('creatorID', 42),
+      {flip: true}),
+  ),
+)
+```
+
+You can manually flip just one or a few of the `whereExists` clauses in a query, leaving the rest to be planned automatically.
+
+## Scalar Subqueries
+
+Scalar subqueries are an optimization for `exists` queries. Instead of doing a join at query time, Zero pre-resolves the subquery and rewrites it as a simple equality check.
+
+To use scalar subqueries, add `{scalar: true}` to your `whereExists` call:
+
+```tsx
+// Instead of joining to find issues where project.name = 'zero'
+// Zero resolves this server-side to: where('projectId', '123')
+zql.issue.whereExists(
+  'project',
+  q => q.where('name', 'zero'),
+  {scalar: true}
+)
+```
+
+Or with `exists`:
+
+```tsx
+zql.issue.where({cmp, exists} =>
+  exists('project',
+    q => q.where('name', 'zero'),
+    {scalar: true},
+  ),
+)
+```
+
+### Why It Matters
+
+Joins are expensive. Sometimes they are needed, but for something like "give me all issues where the owner's name is Alice", you don't need a full join — you just need Alice's ID. The scalar optimization pre-fetches that ID and rewrites your query as `where('ownerId', aliceId)`. This can improve query performance significantly.
+
+It also allows planning to work better. Since the ID is known at planning time, Zero/SQLite can choose better indexes.
+
+### Trade-offs
+
+The query needs to be "rehydrated" (re-run) whenever the scalar subquery result changes.
+
+This is fine for relatively stable lookup data like user IDs or project IDs, but you probably wouldn't want it for rapidly-changing data.
+
+Also, scalar subqueries only work when the subquery is guaranteed to return at most one row (hence "scalar"). Zero checks that your subquery constrains a unique index and will throw an error if it doesn't.
+
+### Future Work
+
+Scalar subqueries are not currently integrated with Zero's planner. You need to manually choose when to use them.

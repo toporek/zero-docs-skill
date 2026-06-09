@@ -1,0 +1,31 @@
+# Project Status
+
+> **Zero to 1.0**
+>
+> As of March 2026, Zero is generally available and
+>   fully-supported.
+
+## Breaking Changes
+
+While we cannot commit to _never_ introducing breaking changes, our goal is to keep the API very stable from here on out. New features will be added in a backwards-compatible way, and deprecated features will be removed after a reasonable deprecation period.
+
+## Roadmap
+
+At this point, our roadmap is largely responsive. We are focused more on fixing reported bugs and improving performance of the existing features, and less on adding new features. That said there are still some big things we would like to do.
+
+### 2026
+
+Major things definitely planned for 2026:
+
+- Get [Cloud Zero](https://zero.rocicorp.dev/#pricing) to full public availability
+- [Column permissions](https://bugs.rocicorp.dev/p/zero/issue/3178)
+- [Terabugs](https://bugs.rocicorp.dev/issue/3158)
+
+### Soon
+
+Things we would like to do in 2026, but are not committing to:
+
+- [Aggregates](https://bugs.rocicorp.dev/issue/3040) (count, min, max, group-by)
+- [SSR](https://bugs.rocicorp.dev/issue/3491)
+- [JSON filters](https://bugs.rocicorp.dev/p/zero/issue/3385)
+- First-class text search

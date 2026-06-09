@@ -1,0 +1,16 @@
+# From the Community
+
+Integrations with various tools, built by the Zero dev community.
+
+If you have made something that should be here, send us a [pull request](https://github.com/rocicorp/zero-docs/pulls).
+
+## UI Frameworks
+
+- [One](https://onestack.dev/) is a full-stack React (and React Native!) framework with built-in Zero support.
+- [zero-svelte](https://github.com/stolinski/zero-svelte) and [zero-svelte-query](https://github.com/RobertoSnap/zero-svelte-query) are two different approaches to Zero bindings for Svelte.
+- [zero-vue](https://github.com/danielroe/zero-vue) adds Zero bindings to Vue.
+- [zero-astro](https://github.com/ferg-cod3s/zero-astro) adds Zero bindings to Astro.
+
+## Miscellaneous
+
+- [undo](https://github.com/rocicorp/undo) is a simple undo/redo library that was originally built for Replicache, but works just as well with Zero.

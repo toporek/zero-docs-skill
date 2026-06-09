@@ -1,0 +1,13 @@
+# Zero is Open Source Software
+
+Specifically, the Zero client and server are Apache-2 licensed. You can use, modify, host, and distribute them freely:
+
+https://github.com/rocicorp/mono/blob/main/LICENSE
+
+## Business Model
+
+We make money by [running Zero as a service](https://zero.rocicorp.dev/#pricing). We also have paid support options.
+
+We may have other commerical projects in the future. For example, we may build closed-source companion software – similar to how Docker, Inc. charges for team access to Docker Desktop.
+
+But we have no plans to ever change the licensing of the core product: We're building a general-purpose sync engine for the entire web, and we can only do that if the core remains completely open.

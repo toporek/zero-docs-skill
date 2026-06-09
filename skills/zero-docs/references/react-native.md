@@ -1,0 +1,48 @@
+# React Native
+
+Zero has built-in support for React Native and Expo.
+
+Usage is identical to [React on the web](./react), except you must provide a `kvStore` implementation.
+Choose the storage adapter you prefer:
+
+<CodeGroup
+  labels={[
+    {text: 'expo-sqlite', sync: {rnkv: 'expo'}},
+    {text: 'op-sqlite', sync: {rnkv: 'op-sqlite'}},
+  ]}
+>
+
+```tsx
+
+  return (
+    <ZeroProvider
+      // ...
+      kvStore={
+        // On native, use expo-sqlite; on web, use IndexedDB
+        Platform.OS !== 'web'
+          ? expoSQLiteStoreProvider()
+          : 'idb'
+      }
+    >
+  )
+}
+```
+
+```tsx
+
+  return (
+    <ZeroProvider
+      // ...
+      kvStore={opSQLiteStoreProvider()}
+    >
+  )
+}
+```
+
+For a complete example, see [zslack](./samples#zslack).
+
+> **If you like speed…**
+>
+> `op-sqlite` is much faster than `expo-sqlite` but does not
+>   work with [Expo Go](https://expo.dev/go). However, it is
+>   supported with `expo prebuild` and development builds.

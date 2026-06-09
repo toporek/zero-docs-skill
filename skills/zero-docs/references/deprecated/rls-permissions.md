@@ -1,0 +1,355 @@
+# RLS Permissions (Deprecated)
+
+> **This API is deprecated**
+>
+> It will be removed in a future release of Zero. See
+>   [Permissions](/docs/auth#permission-patterns) for more
+>   information.
+
+Permissions are expressed using [ZQL](/docs/queries) and run automatically with every read and write.
+
+Permissions are currently row based. Zero will eventually also have column permissions.
+
+## Define Permissions
+
+Permissions are defined in [`schema.ts`](/docs/schema) using the `definePermissions` function.
+
+Here's an example of limiting reads to members of an organization and deletes to only the creator of an issue:
+
+```ts
+// The decoded value of your JWT.
+type AuthData = {
+  // The logged-in user.
+  sub: string
+}
+
+  AuthData,
+  Schema
+>(schema, () => {
+  // Checks if the user exists in a related organization
+  const allowIfInOrganization = (
+    authData: AuthData,
+    eb: ExpressionBuilder<Schema, 'issue'>
+  ) =>
+    eb.exists('organization', q =>
+      q.whereExists('user', q =>
+        q.where('id', authData.sub)
+      )
+    )
+
+  // Checks if the user is the creator
+  const allowIfIssueCreator = (
+    authData: AuthData,
+    {cmp}: ExpressionBuilder<Schema, 'issue'>
+  ) => cmp('creatorID', authData.sub)
+
+  return {
+    issue: {
+      row: {
+        select: [allowIfInOrganization],
+        delete: [allowIfIssueCreator]
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+`definePermission` returns a _policy_ object for each table in the schema. Each policy defines a _ruleset_ for the _operations_ that are possible on a table: `select`, `insert`, `update`, and `delete`.
+
+## Access is Denied by Default
+
+If you don't specify any rules for an operation, it is denied by default. This is an important safety feature that helps ensure data isn't accidentally exposed.
+
+To enable full access to an action (i.e., during development) use the `ANYONE_CAN` helper:
+
+```ts
+
+const permissions = definePermissions<AuthData, Schema>(
+  schema,
+  () => {
+    return {
+      issue: {
+        row: {
+          select: ANYONE_CAN
+          // Other operations are denied by default.
+        }
+      }
+      // Other tables are denied by default.
+    } satisfies PermissionsConfig<AuthData, Schema>
+  }
+)
+```
+
+To do this for all actions, use `ANYONE_CAN_DO_ANYTHING`:
+
+```ts
+
+const permissions = definePermissions<AuthData, Schema>(
+  schema,
+  () => {
+    return {
+      // All operations on issue are allowed to all users.
+      issue: ANYONE_CAN_DO_ANYTHING
+
+      // Other tables are denied by default.
+    } satisfies PermissionsConfig<AuthData, Schema>
+  }
+)
+```
+
+## Permission Evaluation
+
+Zero permissions are "compiled" into a JSON-based format at build-time. This file is stored in the `{ZERO_APP_ID}.permissions` table of your upstream database. Like other tables, it replicates live down to `zero-cache`. `zero-cache` then parses this file, and applies the encoded rules to every read and write operation.
+
+> **Note**
+>
+> The compilation process is very simple-minded (read: dumb). Despite looking like normal TypeScript functions that receive an `AuthData` parameter, rule functions are not actually invoked at runtime. Instead, they are invoked with a "placeholder" `AuthData` at build time. We track which fields of this placeholder are accessed and construct a ZQL expression that accesses the right field of `AuthData` at runtime.
+>
+> The end result is that you can't really use most features of JS in these rules. Specifically you cannot:
+>
+> - Iterate over properties or array elements in the auth token
+> - Use any JS features beyond property access of `AuthData`
+> - Use any conditional or global state
+>
+> Basically only property access is allowed. This is really confusing and we're working on a better solution.
+
+## Permission Deployment
+
+During development, permissions are compiled and uploaded to your database completely automatically as part of the `zero-cache-dev` script.
+
+For production, you need to call `npx zero-deploy-permissions` within your app to update the permissions in the production database whenever they change. You would typically do this as part of your normal schema migration or CI process. For example, the SST deployment script for [Gigabugs](/docs/samples#gigabugs) looks like this:
+
+```ts
+new command.local.Command(
+  'zero-deploy-permissions',
+  {
+    create: `npx zero-deploy-permissions -p ../../src/schema.ts`,
+    // Run the Command on every deploy ...
+    triggers: [Date.now()],
+    environment: {
+      ZERO_UPSTREAM_DB: commonEnv.ZERO_UPSTREAM_DB,
+      // If the application has a non-default App ID ...
+      ZERO_APP_ID: commonEnv.ZERO_APP_ID
+    }
+  },
+  // after the view-syncer is deployed.
+  {dependsOn: viewSyncer}
+)
+```
+
+See the [deployment guide](/docs/self-host) for more details.
+
+## Rules
+
+Each operation on a policy has a _ruleset_ containing zero or more _rules_.
+
+A rule is just a TypeScript function that receives the logged in user's `AuthData` and generates a ZQL [where expression](/docs/zql#compound-filters). At least one rule in a ruleset must return a row for the operation to be allowed.
+
+## Select Permissions
+
+You can limit the data a user can read by specifying a `select` ruleset.
+
+Select permissions act like filters. If a user does not have permission to read a row, it will be filtered out of the result set. It will not generate an error.
+
+For example, imagine a select permission that restricts reads to only issues created by the user:
+
+```ts
+definePermissions<AuthData, Schema>(schema, () => {
+  const allowIfIssueCreator = (
+    authData: AuthData,
+    {cmp}: ExpressionBuilder<Schema, 'issue'>
+  ) => cmp('creatorID', authData.sub)
+
+  return {
+    issue: {
+      row: {
+        select: [allowIfIssueCreator]
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+If the issue table has two rows, one created by the user and one by someone else, the user will only see the row they created in any queries.
+
+> **Column permissions are not currently supported**
+>
+> Select permission applies to every column. The recommended approach for now is to factor out private fields into a separate table, e.g. `user_private`. Column permissions are planned but currently not a high priority.
+>
+> Note that although the same limitation applies to declarative insert/update permissions, [custom mutators](/docs/mutators) support arbitrary server-side logic and so can easily control which columns are writable.
+
+## Insert Permissions
+
+You can limit what rows can be inserted and by whom by specifying an `insert` ruleset.
+
+Insert rules are evaluated after the entity is inserted. So if they query the database, they will see the inserted row present. If any rule in the insert ruleset returns a row, the insert is allowed.
+
+Here's an example of an insert rule that disallows inserting users that have the role 'admin'.
+
+```ts
+definePermissions<AuthData, Schema>(schema, () => {
+  const allowIfNonAdmin = (
+    authData: AuthData,
+    {cmp}: ExpressionBuilder<Schema, 'user'>
+  ) => cmp('role', '!=', 'admin')
+
+  return {
+    user: {
+      row: {
+        insert: [allowIfNonAdmin]
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+## Update Permissions
+
+There are two types of update rulesets: `preMutation` and `postMutation`. Both rulesets must pass for an update to be allowed.
+
+`preMutation` rules see the version of a row _before_ the mutation is applied. This is useful for things like checking whether a user owns an entity before editing it.
+
+`postMutation` rules see the version of a row _after_ the mutation is applied. This is useful for things like ensuring a user can only mark themselves as the creator of an entity and not other users.
+
+Like other rulesets, `preMutation` and `postMutation` default to `NOBODY_CAN`. This means that every table must define both these rulesets in order for any updates to be allowed.
+
+For example, the following ruleset allows an issue's owner to edit, but **not** re-assign the issue. The `postMutation` rule enforces that the current user still own the issue after edit.
+
+```ts
+definePermissions<AuthData, Schema>(schema, () => {
+  const allowIfIssueOwner = (
+    authData: AuthData,
+    {cmp}: ExpressionBuilder<Schema, 'issue'>
+  ) => cmp('ownerID', authData.sub)
+
+  return {
+    issue: {
+      row: {
+        update: {
+          preMutation: [allowIfIssueOwner],
+          postMutation: [allowIfIssueOwner]
+        }
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+This ruleset allows an issue's owner to edit and re-assign the issue:
+
+```ts
+definePermissions<AuthData, Schema>(schema, () => {
+  const allowIfIssueOwner = (
+    authData: AuthData,
+    {cmp}: ExpressionBuilder<Schema, 'issue'>
+  ) => cmp('ownerID', authData.sub)
+
+  return {
+    issue: {
+      row: {
+        update: {
+          preMutation: [allowIfIssueOwner],
+          postMutation: ANYONE_CAN
+        }
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+And this allows anyone to edit an issue, but only if they also assign it to themselves. Useful for enforcing _"patches welcome"_? 🙃
+
+```ts
+definePermissions<AuthData, Schema>(schema, () => {
+  const allowIfIssueOwner = (
+    authData: AuthData,
+    {cmp}: ExpressionBuilder<Schema, 'issue'>
+  ) => cmp('ownerID', authData.sub)
+
+  return {
+    issue: {
+      row: {
+        update: {
+          preMutation: ANYONE_CAN,
+          postMutation: [allowIfIssueOwner]
+        }
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+## Delete Permissions
+
+Delete permissions work in the same way as `insert` permissions except they run _before_ the delete is applied. So if a delete rule queries the database, it will see that the deleted row is present. If any rule in the ruleset returns a row, the delete is allowed.
+
+## Permissions Based on Auth Data
+
+You can use the [`cmpLit` helper](/docs/zql#comparing-literal-values) to define permissions based on a field of the `authData` parameter:
+
+```ts
+definePermissions<AuthData, Schema>(schema, () => {
+  const allowIfAdmin = (
+    authData: AuthData,
+    {cmpLit}: ExpressionBuilder<Schema, 'issue'>
+  ) => cmpLit(authData.role, 'admin')
+
+  return {
+    issue: {
+      row: {
+        select: [allowIfAdmin]
+      }
+    }
+  } satisfies PermissionsConfig<AuthData, Schema>
+})
+```
+
+## Debugging
+
+Given that permissions are defined in their own file and internally applied to queries, it can be hard to figure out if or why a permission check is failing.
+
+### Read Permissions
+
+You can use the `analyze-query` utility with the `--apply-permissions` flag to see the complete query Zero runs, including read permissions.
+
+```bash
+npx analyze-query
+  --schema-path='./shared/schema.ts'
+  --query='issue.related("comments")'
+  --apply-permissions
+  --auth-data='{"userId":"user-123"}'
+```
+
+If the result looks right, the problem may be that Zero is not receiving the `AuthData` that you think it is. You can retrieve a query hash from websocket or server logs, then ask Zero for the details on that specific query.
+
+Run this command with the same environment you run `zero-cache` with. It will use your `upstream` or `cvr` configuration to look up the query hash in the cvr database.
+
+```bash
+npx analyze-query
+  --schema-path='./shared/schema.ts'
+  --hash='3rhuw19xt9vry'
+  --apply-permissions
+  --auth-data='{"userId":"user-123"}'
+```
+
+> **Note**
+>
+> The printed query can be different than the source ZQL
+>   string, because it is rebuilt from the query AST. But it
+>   should be logically equivalent to the query you wrote.
+
+### Write Permissions
+
+Look for a `WARN` level log in the output from `zero-cache` like this:
+
+```
+Permission check failed for {"op":"update","tableName":"message",...}, action update, phase preMutation, authData: {...}, rowPolicies: [...], cellPolicies: []
+```
+
+Zero prints the row, auth data, and permission policies that was applied to any failed writes.
+
+> **Note**
+>
+> The ZQL query is printed in AST format. See [Query
+>   ASTs](/docs/debug/query-asts) to convert it to a more
+>   readable format.
