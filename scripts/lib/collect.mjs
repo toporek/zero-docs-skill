@@ -1,7 +1,7 @@
 // scripts/lib/collect.mjs
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { transformMdx } from './transform.mjs';
+import { parseFrontmatter } from './transform.mjs';
 
 /** Recursively collect absolute paths of *.mdx files under `dir`, sorted. */
 export function findMdx(dir) {
@@ -15,26 +15,24 @@ export function findMdx(dir) {
 }
 
 /**
- * Transform every .mdx under `docsDir`.
- * @returns {{ files: Map<string,string>, entries: Array<{path,title,description}>, unknown: Set<string> }}
- *   `files` keys and `entries[].path` are POSIX-style paths relative to docsDir
- *   with `.mdx` rewritten to `.md`.
+ * Read frontmatter metadata for every .mdx under `docsDir`.
+ * Paths are POSIX-style relative to docsDir with `.mdx` rewritten to `.md`.
+ * Bodies are NOT transformed here — they are fetched from the rendered
+ * markdown endpoint by sync.mjs.
  */
-export function collectDocs(docsDir) {
-  const files = new Map();
+export function collectMeta(docsDir) {
   const entries = [];
-  const unknown = new Set();
   for (const mdxPath of findMdx(docsDir)) {
     const relMd = relative(docsDir, mdxPath)
       .split(sep)
       .join('/')
       .replace(/\.mdx$/, '.md');
-    const { title, description, body } = transformMdx(
-      readFileSync(mdxPath, 'utf8'),
-      (name) => unknown.add(name),
-    );
-    files.set(relMd, body);
-    entries.push({ path: relMd, title, description });
+    const { data } = parseFrontmatter(readFileSync(mdxPath, 'utf8'));
+    entries.push({
+      path: relMd,
+      title: data.title || 'Untitled',
+      description: data.description || '',
+    });
   }
-  return { files, entries, unknown };
+  return entries;
 }
