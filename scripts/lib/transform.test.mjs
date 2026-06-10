@@ -1,7 +1,7 @@
 // scripts/lib/transform.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseFrontmatter, stripEsm } from './transform.mjs';
+import { parseFrontmatter, stripEsm, finalizeDoc } from './transform.mjs';
 
 test('parseFrontmatter extracts title and description', () => {
   const raw = '---\ntitle: ZQL\ndescription: Zero Query Language\n---\nBody here\n';
@@ -102,4 +102,16 @@ test('stripEsm toggles fence state so post-fence top-level imports are still str
   const out = stripEsm(body);
   assert.match(out, /import \{ inside \}/);
   assert.doesNotMatch(out, /import \{ outside \}/);
+});
+
+test('finalizeDoc normalizes CRLF, trims, ensures trailing newline', () => {
+  assert.equal(finalizeDoc('# Hi\r\n\r\nBody\r\n\n\n', 'Hi'), '# Hi\n\nBody\n');
+});
+
+test('finalizeDoc prepends a heading when the fetched body lacks one', () => {
+  assert.equal(finalizeDoc('Just prose.', 'My Title'), '# My Title\n\nJust prose.\n');
+});
+
+test('finalizeDoc keeps an existing heading without duplicating', () => {
+  assert.equal(finalizeDoc('# Already Here\n\nBody', 'Other'), '# Already Here\n\nBody\n');
 });

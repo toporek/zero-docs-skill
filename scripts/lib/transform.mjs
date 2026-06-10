@@ -24,6 +24,16 @@ export function parseFrontmatter(raw) {
 }
 
 /**
+ * Normalize a page body fetched from the rendered-markdown endpoint:
+ * CRLF → LF, trimmed, guaranteed to start with an H1 and end with one newline.
+ */
+export function finalizeDoc(fetched, title) {
+  let out = fetched.replace(/\r\n/g, '\n').trim();
+  if (!/^#\s/.test(out)) out = '# ' + title + '\n\n' + out;
+  return out + '\n';
+}
+
+/**
  * Remove MDX `import ... from ...`, side-effect imports, and `export ...` lines
  * that appear at the MDX top level. Lines inside fenced code blocks are preserved
  * verbatim so code examples stay intact.
