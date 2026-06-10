@@ -73,3 +73,30 @@ test('rewriteDocLinks does not touch lines inside code fences', () => {
     'pre [a](schema.md)\n```\nfetch("/docs/schema")\n[b](/docs/schema)\n```\npost',
   );
 });
+
+test('finalizeDoc strips whole-line MDX comments like prettier-ignore', () => {
+  assert.equal(
+    finalizeDoc('# T\n\n{/* prettier-ignore */}\n\n```tsx\ncode\n```', 'T'),
+    '# T\n\n```tsx\ncode\n```\n',
+  );
+});
+
+test('rewriteDocLinks handles slugs containing dots (release notes)', () => {
+  const files = new Set(['release-notes/0.21.md']);
+  assert.equal(
+    rewriteDocLinks('[v](https://zero.rocicorp.dev/docs/release-notes/0.21)', 'schema.md', files),
+    '[v](release-notes/0.21.md)',
+  );
+});
+
+test('rewriteDocLinks drops query strings from doc links', () => {
+  const files = new Set(['server-zql.md']);
+  assert.equal(
+    rewriteDocLinks(
+      '[s](https://zero.rocicorp.dev/docs/server-zql?codeGroup=pgclient%3Akysely#creating-a-database)',
+      'schema.md',
+      files,
+    ),
+    '[s](server-zql.md#creating-a-database)',
+  );
+});

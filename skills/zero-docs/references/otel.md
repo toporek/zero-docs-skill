@@ -16,16 +16,12 @@ OTEL_NODE_RESOURCE_DETECTORS="env,host,os"
 Here are instructions to setup [Grafana Cloud](https://grafana.com/oss/grafana/), but the setup for other otel collectors should be similar.
 
 1. Sign up for [Grafana Cloud (Free Tier)](https://grafana.com/auth/sign-up/create-user?pg=login)
-2. Click Connections > Add Connection in the left sidebar
-   ![add-connection](/images/debugging/otel/add-connection.png)
+2. Click Connections > Add Connection in the left sidebar ![add-connection](https://zero.rocicorp.dev/images/debugging/otel/add-connection.png)
 3. Search for "OpenTelemetry" and select it
-4. Click "Quickstart"
-   ![quickstart](/images/debugging/otel/quickstart.png)
-5. Select "JavaScript"
-   ![javascript](/images/debugging/otel/javascript.png)
+4. Click "Quickstart" ![quickstart](https://zero.rocicorp.dev/images/debugging/otel/quickstart.png)
+5. Select "JavaScript" ![javascript](https://zero.rocicorp.dev/images/debugging/otel/javascript.png)
 6. Create a new token
-7. Copy the environment variables into your `.env` file or similar
-   ![copy-env](/images/debugging/otel/env.png)
+7. Copy the environment variables into your `.env` file or similar ![copy-env](https://zero.rocicorp.dev/images/debugging/otel/env.png)
 8. Start `zero-cache`
 9. Look for logs under "Drilldown" > "Logs" in left sidebar
 
@@ -35,13 +31,7 @@ You can enable end-to-end trace correlation from your frontend through zero-cach
 
 To enable this, provide a `getTraceparent` callback when creating your Zero client:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
@@ -58,8 +48,12 @@ return (
     /* ... other options ... */
     getTraceparent={getTraceparent}
   >
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**SolidJS**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/solid'
@@ -76,8 +70,12 @@ return (
     /* ... other options ... */
     getTraceparent={getTraceparent}
   >
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**TypeScript**
 
 ```ts
 import {Zero} from '@rocicorp/zero'
@@ -97,24 +95,6 @@ This callback is called before sending WebSocket messages that trigger API serve
 
 ## Metrics Reference
 
-<style>{`
-.metrics-reference ~ h3 + table {
-  table-layout: fixed;
-  width: 100%;
-}
-
-.metrics-reference ~ h3 + table td code { word-break: break-all; }
-
-.metrics-reference ~ h3 + table th:nth-child(1),
-.metrics-reference ~ h3 + table td:nth-child(1) { width: 175px;}
-.metrics-reference ~ h3 + table th:nth-child(2),
-.metrics-reference ~ h3 + table td:nth-child(2) { width: 100px; }
-.metrics-reference ~ h3 + table th:nth-child(3),
-.metrics-reference ~ h3 + table td:nth-child(3) { width: 65px; }
-`}</style>
-
-<div className="metrics-reference" />
-
 ### zero.server
 
 | Metric   | Type  | Unit | Description                                               |
@@ -132,15 +112,15 @@ This callback is called before sending WebSocket messages that trigger API serve
 
 ### zero.replication
 
-| Metric         | Type    | Unit | Description                                                                            |
-| -------------- | ------- | ---- | -------------------------------------------------------------------------------------- |
-| `upstream_lag` | Gauge   | ms   | Latency from sending a replication report to receiving it in the stream                |
-| `replica_lag`  | Gauge   | ms   | Latency from receiving a replication report to it reaching the replica                 |
-| `total_lag`    | Gauge   | ms   | End-to-end replication latency. Grows as an estimate if the next report hasn't arrived |
-| `events`       | Counter |      | Number of replication events processed                                                 |
-| `transactions` | Counter |      | Count of replicated transactions                                                       |
-| `shadow-sync-runs`     | Counter   |    | Number of [shadow initial-sync](/docs/zero-cache-config#shadow-sync-enabled) runs. Has a `result` attribute: `success`, `error` |
-| `shadow-sync-duration` | Histogram | s  | Wall-clock duration of a shadow initial-sync run. Has a `result` attribute: `success`, `error`                                  |
+| Metric                 | Type      | Unit | Description                                                                                                                                              |
+| ---------------------- | --------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `upstream_lag`         | Gauge     | ms   | Latency from sending a replication report to receiving it in the stream                                                                                  |
+| `replica_lag`          | Gauge     | ms   | Latency from receiving a replication report to it reaching the replica                                                                                   |
+| `total_lag`            | Gauge     | ms   | End-to-end replication latency. Grows as an estimate if the next report hasn't arrived                                                                   |
+| `events`               | Counter   |      | Number of replication events processed                                                                                                                   |
+| `transactions`         | Counter   |      | Count of replicated transactions                                                                                                                         |
+| `shadow-sync-runs`     | Counter   |      | Number of [shadow initial-sync](zero-cache-config.md#shadow-sync-enabled) runs. Has a `result` attribute: `success`, `error` |
+| `shadow-sync-duration` | Histogram | s    | Wall-clock duration of a shadow initial-sync run. Has a `result` attribute: `success`, `error`                                                           |
 
 ### zero.sync
 
@@ -175,3 +155,5 @@ This callback is called before sending WebSocket messages that trigger API serve
 | `crud`   | Counter |      | Number of CRUD mutations processed   |
 | `custom` | Counter |      | Number of custom mutations processed |
 | `pushes` | Counter |      | Number of pushes processed           |
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

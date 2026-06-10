@@ -2,15 +2,9 @@
 
 Zero has built-in support for React Native and Expo.
 
-Usage is identical to [React on the web](./react), except you must provide a `kvStore` implementation.
-Choose the storage adapter you prefer:
+Usage is identical to [React on the web](react.md), except you must provide a `kvStore` implementation. Choose the storage adapter you prefer:
 
-<CodeGroup
-  labels={[
-    {text: 'expo-sqlite', sync: {rnkv: 'expo'}},
-    {text: 'op-sqlite', sync: {rnkv: 'op-sqlite'}},
-  ]}
->
+**expo-sqlite**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
@@ -27,9 +21,13 @@ export function RootLayout() {
           : 'idb'
       }
     >
+      <App />
+    </ZeroProvider>
   )
 }
 ```
+
+**op-sqlite**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
@@ -41,14 +39,14 @@ export default function RootLayout() {
       // ...
       kvStore={opSQLiteStoreProvider()}
     >
+      <App />
+    </ZeroProvider>
   )
 }
 ```
 
-For a complete example, see [zslack](./samples#zslack).
+For a complete example, see [zslack](samples.md#zslack).
 
-> **If you like speed…**
->
-> `op-sqlite` is much faster than `expo-sqlite` but does not
->   work with [Expo Go](https://expo.dev/go). However, it is
->   supported with `expo prebuild` and development builds.
+> 🤓 **If you like speed…**: `op-sqlite` is much faster than `expo-sqlite` but does not work with [Expo Go](https://expo.dev/go). However, it is supported with `expo prebuild` and development builds.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

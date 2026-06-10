@@ -25,10 +25,25 @@ export function parseFrontmatter(raw) {
 
 /**
  * Normalize a page body fetched from the rendered-markdown endpoint:
- * CRLF → LF, trimmed, guaranteed to start with an H1 and end with one newline.
+ * CRLF → LF, whole-line MDX comments (e.g. prettier-ignore directives in
+ * curly-brace JSX comments) removed outside code fences, trimmed, guaranteed
+ * to start with an H1 and end with one newline.
  */
 export function finalizeDoc(fetched, title) {
-  let out = fetched.replace(/\r\n/g, '\n').trim();
+  let inFence = false;
+  let out = fetched
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .filter((line) => {
+      if (/^\s*(```|~~~)/.test(line)) {
+        inFence = !inFence;
+        return true;
+      }
+      return inFence || !/^\s*\{\/\*.*\*\/\}\s*$/.test(line);
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   if (!/^#\s/.test(out)) out = '# ' + title + '\n\n' + out;
   return out + '\n';
 }
@@ -49,7 +64,7 @@ export function rewriteDocLinks(body, selfPath, files) {
     while (i < fromDir.length && i < to.length - 1 && fromDir[i] === to[i]) i++;
     return [...Array(fromDir.length - i).fill('..'), ...to.slice(i)].join('/');
   };
-  const linkRe = /\]\((?:https:\/\/zero\.rocicorp\.dev)?\/docs\/([A-Za-z0-9_/-]+?)(?:\.md)?(#[^)]*)?\)/g;
+  const linkRe = /\]\((?:https:\/\/zero\.rocicorp\.dev)?\/docs\/([A-Za-z0-9_/.-]+?)(?:\.md)?(?:\?[^)#]*)?(#[^)]*)?\)/g;
   let inFence = false;
   return body
     .split('\n')

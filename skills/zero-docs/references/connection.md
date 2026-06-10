@@ -4,32 +4,13 @@
 
 Zero manages a persistent connection to `zero-cache` with the following lifecycle:
 
-<ImageLightbox
-  src="/images/connection-state/lifecycle.png"
-  caption="Zero's connection lifecycle"
-  invert="light"
-/>
+![Zero's connection lifecycle](https://zero.rocicorp.dev/images/connection-state/lifecycle.png)
 
 ## Usage
 
 The current connection state is available in the `zero.connection.state` property. This is subscribable and also has reactive hooks for React and SolidJS:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'React',
-      sync: {client: 'react'},
-    },
-    {
-      text: 'SolidJS',
-      sync: {client: 'solidjs'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**React**
 
 ```tsx
 import {useConnectionState} from '@rocicorp/zero/react'
@@ -54,6 +35,8 @@ function ConnectionStatus() {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 import {useConnectionState} from '@rocicorp/zero/solid'
 
@@ -61,18 +44,32 @@ function ConnectionStatus() {
   const state = useConnectionState()
 
   return (
+    <Switch>
+      <Match when={state().name === 'connecting'}>
         <div title={state().reason}>Connecting...</div>
+      </Match>
 
+      <Match when={state().name === 'connected'}>
         <div>Connected</div>
+      </Match>
 
+      <Match when={state().name === 'disconnected'}>
         <div title={state().reason}>Offline</div>
+      </Match>
 
+      <Match when={state().name === 'error'}>
         <div title={state().reason}>Error</div>
+      </Match>
 
+      <Match when={state().name === 'needs-auth'}>
         <div>Session expired</div>
+      </Match>
+    </Switch>
   )
 }
 ```
+
+**TypeScript**
 
 ```ts
 zero.connection.state.subscribe(state => {
@@ -102,14 +99,14 @@ zero.connection.state.subscribe(state => {
 
 Zero [does not support offline writes](#why-zero-doesnt-support-offline-writes). When the client is in the `disconnected`, `error`, or `needs-auth` states, reads from synced data continue to work, but writes are rejected.
 
-| State          | Reads | Writes      |
-| -------------- | ----- | ----------- |
-| `connecting`   | ✅    | ✅ (queued) |
-| `connected`    | ✅    | ✅          |
-| `disconnected` | ✅    | ❌          |
-| `error`        | ✅    | ❌          |
-| `needs-auth`   | ✅    | ❌          |
-| `closed`       | ❌    | ❌          |
+| State          | Reads | Writes     |
+| -------------- | ----- | ---------- |
+| `connecting`   | ✅     | ✅ (queued) |
+| `connected`    | ✅     | ✅          |
+| `disconnected` | ✅     | ❌          |
+| `error`        | ✅     | ❌          |
+| `needs-auth`   | ✅     | ❌          |
+| `closed`       | ❌     | ❌          |
 
 ## Offline UI
 
@@ -140,13 +137,7 @@ If the connection fails, the writes remain queued and are sent the next time Zer
 
 This is intended to paper over short connectivity glitches, such as server restarts, walking into an elevator, etc.
 
-> **Zero is not designed for long periods offline**
->
-> While you can increase the `disconnectTimeoutMs` to allow
->   for longer periods of offline operation, this has caveats
->   and is not recommended. Please see
->   [offline](#why-zero-doesnt-support-offline-writes) for
->   more information.
+> 🦖 **Zero is not designed for long periods offline**: While you can increase the `disconnectTimeoutMs` to allow for longer periods of offline operation, this has caveats and is not recommended. Please see [offline](#why-zero-doesnt-support-offline-writes) for more information.
 
 ### Connected
 
@@ -162,14 +153,13 @@ Reads are allowed while `disconnected`, but writes are rejected and return an of
 
 ### Error
 
-If `zero-cache` itself crashes, or if the [mutate](/docs/mutators) or [query](/docs/queries) endpoints return a network or HTTP error, Zero transitions to the `error` state.
+If `zero-cache` itself crashes, or if the [mutate](mutators.md) or [query](queries.md) endpoints return a network or HTTP error, Zero transitions to the `error` state.
 
 This type of error is unlikely to resolve just by retrying, so Zero doesn't try. The app can retry the connection manually by calling `zero.connection.connect()`.
 
 Reads are allowed while in the `error` state, but writes are rejected.
 
-You can forward connection errors to Sentry (or any error-monitoring tool) by subscribing to `zero.connection.state`.
-You can wrap `reason` in an `Error` and report it:
+You can forward connection errors to Sentry (or any error-monitoring tool) by subscribing to `zero.connection.state`. You can wrap `reason` in an `Error` and report it:
 
 ```ts
 import * as Sentry from '@sentry/browser'
@@ -189,16 +179,15 @@ zero.connection.state.subscribe(state => {
 
 ### Needs-Auth
 
-If the [mutate](/docs/mutators) or [query](/docs/queries) endpoints return a 401 or 403 status code, Zero transitions to the `needs-auth` state.
+If the [mutate](mutators.md) or [query](queries.md) endpoints return a 401 or 403 status code, Zero transitions to the `needs-auth` state.
 
 For cookie auth, refresh the cookie and call `zero.connection.connect()`.
 
-For token auth, fetch a new token and call `zero.connection.connect({auth: newToken})` to refresh the token in place without recreating the client.
-If you are using `ZeroProvider`, it will do this for you when the `auth` value changes from one token to another.
+For token auth, fetch a new token and call `zero.connection.connect({auth: newToken})` to refresh the token in place without recreating the client. If you are using `ZeroProvider`, it will do this for you when the `auth` value changes from one token to another.
 
 Reads are allowed while in the `needs-auth` state, but writes are rejected.
 
-See [Authentication](/docs/auth#auth-failure-and-refresh) for more information.
+See [Authentication](auth.md#auth-failure-and-refresh) for more information.
 
 ### Closed
 
@@ -218,23 +207,25 @@ Imagine two users are editing an article about cats. One goes offline and does a
 
 This is a trivial data model with a single field, and is already unsolvable. Real-world applications are much worse:
 
-- Foreign keys and other constraints can pass while offline, but break when the user reconnects.
-- Custom business logic and authorization rules can pass while offline, but break when the user reconnects.
-- The application's schema can change while offline, and the user's data may not be processable by the new schema.
+* Foreign keys and other constraints can pass while offline, but break when the user reconnects.
+* Custom business logic and authorization rules can pass while offline, but break when the user reconnects.
+* The application's schema can change while offline, and the user's data may not be processable by the new schema.
 
 Just take your own schema and ask yourself what should really happen if one user takes their device offline for a week and makes arbitrarily complex changes while other users are working online.
 
 ### Tradeoffs
 
-It is of course _possible_ to create applications that support offline writes well (Git exists!). But it requires significant tradeoffs. For example, you could:
+It is of course *possible* to create applications that support offline writes well (Git exists!). But it requires significant tradeoffs. For example, you could:
 
-- Disallow destructive operations (i.e., users can create tasks while offline, but cannot edit or delete them).
-- Support custom UX to allow users to fork and merge conflicts when they occur.
-- Restrict offline writes to a single device.
-- Accept potential user data loss.
+* Disallow destructive operations (i.e., users can create tasks while offline, but cannot edit or delete them).
+* Support custom UX to allow users to fork and merge conflicts when they occur.
+* Restrict offline writes to a single device.
+* Accept potential user data loss.
 
 ### Zero's Position
 
 While we recognize that offline writes would be useful, the reality is that for most of the apps we want to support, the user is online the vast majority of the time and the cost to support offline is extremely high. There is simply more value in making the online experience great first, and that's where we're focused right now.
 
 We would like to [revisit this in the future](https://bugs.rocicorp.dev/p/zero/issue/246605), but it's not a priority right now.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

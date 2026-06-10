@@ -1,5 +1,9 @@
 # Previews
 
+Per-Branch Preview URLs
+
+# Previews
+
 Most teams deploying to platforms like Vercel use unique hostnames per preview build. Zero supports this directly, and you do not need one `zero-cache` instance per preview deployment.
 
 ## Overview
@@ -46,11 +50,11 @@ const zero = new Zero({
 })
 ```
 
-For full URL pattern syntax details, see [Queries URL Patterns](/docs/queries#url-patterns).
+For full URL pattern syntax details, see [Queries URL Patterns](queries.md#url-patterns).
 
 ## Schema Changes in Previews
 
-If a preview includes a schema change, you should implement the schema change **first** and do it in the same backwards-compatible way documented in [Schema Changes](/docs/schema#schema-changes) (`expand → migrate → contract`). After that, implement the rest of the preview behavior.
+If a preview includes a schema change, you should implement the schema change **first** and do it in the same backwards-compatible way documented in [Schema Changes](schema.md#schema-changes) (`expand → migrate → contract`). After that, implement the rest of the preview behavior.
 
 In practice, this means:
 
@@ -61,3 +65,5 @@ In practice, this means:
 If desired, previews can share a single staging database.
 
 Neon-style per-preview database branching is not well supported with Zero today, because each upstream database typically needs its own `zero-cache`.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

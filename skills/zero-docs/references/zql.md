@@ -1,8 +1,12 @@
 # ZQL
 
+Zero Query Language
+
+# ZQL
+
 Inspired by SQL, ZQL is expressed in TypeScript with heavy use of the builder pattern. If you have used [Drizzle](https://orm.drizzle.team/) or [Kysely](https://kysely.dev/), ZQL will feel familiar.
 
-ZQL queries are composed of one or more _clauses_ that are chained together into a _query_.
+ZQL queries are composed of one or more *clauses* that are chained together into a *query*.
 
 ## Create a Builder
 
@@ -38,9 +42,7 @@ zql.issue
 
 This is a design tradeoff that allows Zero to better reuse the row locally for future queries. This also makes it easier to share types between different parts of the code.
 
-> **Data returned from ZQL should be considered immutable**
->
-> This means you should not modify the data directly. Instead, clone the data and modify the clone.
+> 🧑‍🏫 **Data returned from ZQL should be considered immutable**: This means you should not modify the data directly. Instead, clone the data and modify the clone.
 >
 > ZQL caches values and returns them multiple times. If you modify a value returned from ZQL, you will modify it everywhere it is used. This can lead to subtle bugs.
 >
@@ -86,7 +88,6 @@ zql.issue.orderBy('created', 'desc').limit(100)
 
 You can start the results at or after a particular row with `start()`:
 
-{/* prettier-ignore */}
 ```tsx
 let start: IssueRow | undefined
 while (true) {
@@ -106,7 +107,7 @@ while (true) {
 }
 ```
 
-By default `start()` is _exclusive_ - it returns rows starting **after** the supplied reference row. This is what you usually want for paging. If you want _inclusive_ results, you can do:
+By default `start()` is *exclusive* - it returns rows starting **after** the supplied reference row. This is what you usually want for paging. If you want *inclusive* results, you can do:
 
 ```tsx
 zql.issue.start(row, {inclusive: true})
@@ -116,7 +117,6 @@ zql.issue.start(row, {inclusive: true})
 
 If you want exactly zero or one results, use the `one()` clause. This causes ZQL to return `Row|undefined` rather than `Row[]`.
 
-{/* prettier-ignore */}
 ```tsx
 const result = await zql.issue
   .where('id', 42)
@@ -131,7 +131,7 @@ if (!result) {
 
 ## Relationships
 
-You can query related rows using _relationships_ that are defined in your [Zero schema](/docs/schema).
+You can query related rows using *relationships* that are defined in your [Zero schema](schema.md).
 
 ```tsx
 // Get all issues and their related comments
@@ -167,11 +167,9 @@ zql.issue.related(
 )
 ```
 
-This _relationship query_ can have all the same clauses that top-level queries can have.
+This *relationship query* can have all the same clauses that top-level queries can have.
 
-> **Order and limit not supported in junction relationships**
->
-> Using `orderBy` or `limit` in a relationship that goes through a junction table (i.e., a many-to-many relationship) is not currently supported and will throw a runtime error. See [bug 3527](https://bugs.rocicorp.dev/issue/3527).
+> **Order and limit not supported in junction relationships**: Using `orderBy` or `limit` in a relationship that goes through a junction table (i.e., a many-to-many relationship) is not currently supported and will throw a runtime error. See [bug 3527](https://bugs.rocicorp.dev/issue/3527).
 >
 > You can sometimes work around this by making the junction relationship explicit, depending on your schema and usage.
 
@@ -198,7 +196,7 @@ You can filter a query with `where()`:
 zql.issue.where('priority', '=', 'high')
 ```
 
-The first parameter is always a column name from the table being queried. TypeScript completion will offer available options (sourced from your [Zero Schema](/docs/schema)).
+The first parameter is always a column name from the table being queried. TypeScript completion will offer available options (sourced from your [Zero Schema](schema.md)).
 
 ### Comparison Operators
 
@@ -214,10 +212,7 @@ Where supports the following comparison operators:
 
 TypeScript will restrict you from using operators with types that don’t make sense – you can’t use `>` with `boolean` for example.
 
-> **Don't see the operator you need?**
->
-> [Let us know](https://discord.rocicorp.dev/)! Many are
->   easy to add.
+> **Don't see the operator you need?**: [Let us know](https://discord.rocicorp.dev/)! Many are easy to add.
 
 ### Equals is the Default Comparison Operator
 
@@ -282,11 +277,10 @@ zql.issue.where(({cmp, and, or, not}) =>
 )
 ```
 
-`cmp` is short for _compare_ and works the same as `where` at the top-level except that it can’t be chained and it only accepts comparison operators (no relationship filters – see below).
+`cmp` is short for *compare* and works the same as `where` at the top-level except that it can’t be chained and it only accepts comparison operators (no relationship filters – see below).
 
 Note that chaining `where()` is also a one-level `and`:
 
-{/* prettier-ignore */}
 ```tsx
 // Find issues with priority 3 or higher, owned by aa
 zql.issue
@@ -312,7 +306,7 @@ To compare to a literal value, use the `cmpLit` helper:
 zql.issue.where(cmpLit('foobar', 'foo' + 'bar'))
 ```
 
-This is particularly useful for implementing [permissions](/docs/auth#read-permissions), because the first parameter can be a field of your [context](/docs/auth#context):
+This is particularly useful for implementing [permissions](auth.md#read-permissions), because the first parameter can be a field of your [context](auth.md#context):
 
 ```ts
 zql.issue.where(cmpLit(ctx.role, 'admin'))
@@ -361,7 +355,6 @@ zql.issue.where({cmp, or, exists} =>
 
 You can get the TypeScript type of the result of a query using the `QueryResultType` helper:
 
-{/* prettier-ignore */}
 ```ts
 import type {QueryResultType} from '@rocicorp/zero'
 
@@ -398,7 +391,7 @@ Zero automatically plans queries, selecting the best indexes and join orders in 
 
 ### Inspecting Query Plans
 
-You can inspect the plan that Zero generates for any ZQL query [using the inspector](/docs/debug/inspector#analyzing-queries).
+You can inspect the plan that Zero generates for any ZQL query [using the inspector](debug/inspector.md#analyzing-queries).
 
 ### Manually Flipping Joins
 
@@ -481,3 +474,5 @@ Also, scalar subqueries only work when the subquery is guaranteed to return at m
 ### Future Work
 
 Scalar subqueries are not currently integrated with Zero's planner. You need to manually choose when to use them.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

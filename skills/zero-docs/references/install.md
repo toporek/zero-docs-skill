@@ -1,6 +1,6 @@
 # Install Zero
 
-This guide shows how to add Zero to an existing TypeScript-based web app. For a concrete end-to-end walkthrough, build the music app in the [tutorial](/docs/tutorial).
+This guide shows how to add Zero to an existing TypeScript-based web app. For a concrete end-to-end walkthrough, build the music app in the [tutorial](tutorial.md).
 
 ## Integrate Zero
 
@@ -8,12 +8,7 @@ This guide shows how to add Zero to an existing TypeScript-based web app. For a 
 
 You'll need a Postgres database with logical replication enabled for development.
 
-<CodeGroup
-  labels={[
-    {text: 'Docker', sync: {db: 'docker'}},
-    {text: 'Postgres.app', sync: {db: 'postgres-app'}},
-  ]}
->
+**Docker**
 
 ```bash
 # IMPORTANT: logical WAL level is required for Zero
@@ -25,6 +20,8 @@ docker run -d --name zero-postgres \
   postgres:18 \
   postgres -c wal_level=logical
 ```
+
+**Postgres.app**
 
 ```bash
 # Start Postgres.app first. Requires Postgres 15 or higher.
@@ -39,10 +36,7 @@ psql -d postgres -c "ALTER SYSTEM SET wal_level = 'logical';"
 psql -d postgres -c "SHOW wal_level;"
 ```
 
-> **Already using another Postgres provider?**
->
-> See [Provider Support](/docs/connecting-to-postgres) and
->   make sure `wal_level` is `logical`.
+> 🧑‍💻 **Already using another Postgres provider?**: See [Provider Support](connecting-to-postgres.md) and make sure `wal_level` is `logical`.
 
 Create a `.env` file so your app server and `zero-cache-dev` use the same Postgres connection:
 
@@ -55,18 +49,13 @@ ZERO_UPSTREAM_DB="postgres://postgres:pass@localhost:5432/zero"
 
 Add Zero and the validator used in these examples:
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-    {text: 'yarn', sync: {pm: 'yarn'}},
-  ]}
->
+**npm**
 
 ```bash
 npm install @rocicorp/zero zod
 ```
+
+**pnpm**
 
 ```bash
 pnpm add @rocicorp/zero zod
@@ -79,6 +68,8 @@ pnpm add @rocicorp/zero zod
 pnpm rebuild @rocicorp/zero-sqlite3
 ```
 
+**bun**
+
 ```bash
 bun add @rocicorp/zero zod
 
@@ -89,6 +80,8 @@ bun pm trust @rocicorp/zero-sqlite3
 # Or add to package.json, then rebuild the native packages:
 # "trustedDependencies": ["@rocicorp/zero-sqlite3"]
 ```
+
+**yarn**
 
 ```bash
 yarn add @rocicorp/zero zod
@@ -111,42 +104,39 @@ Zero uses a file called `schema.ts` to provide a type-safe query API.
 
 If you use Drizzle or Prisma, you can generate the schema automatically. Otherwise, you can create it manually.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'Drizzle',
-      sync: {orm: 'drizzle', pgClient: 'drizzle'},
-    },
-    {
-      text: 'Prisma',
-      sync: {orm: 'prisma', pgClient: 'prisma'},
-    },
-    {
-      text: 'Manual',
-      sync: {orm: 'other', pgClient: 'other'},
-    },
-  ]}
->
+**Drizzle**
+
+**npm**
 
 ```bash
 npm install -D drizzle-zero
 npx drizzle-zero generate --output src/zero/schema.ts
 ```
 
+**pnpm**
+
 ```bash
 pnpm add -D drizzle-zero
 pnpm exec drizzle-zero generate --output src/zero/schema.ts
 ```
+
+**bun**
 
 ```bash
 bun add -D drizzle-zero
 bunx drizzle-zero generate --output src/zero/schema.ts
 ```
 
+**yarn**
+
 ```bash
 yarn add -D drizzle-zero
 yarn exec drizzle-zero generate --output src/zero/schema.ts
 ```
+
+**Prisma**
+
+**npm**
 
 ```bash
 npm install -D prisma-zero
@@ -158,6 +148,8 @@ npm install -D prisma-zero
 npx prisma generate
 ```
 
+**pnpm**
+
 ```bash
 pnpm add -D prisma-zero
 # Add this to prisma/schema.prisma:
@@ -167,6 +159,8 @@ pnpm add -D prisma-zero
 # }
 pnpx prisma generate
 ```
+
+**bun**
 
 ```bash
 bun add -D prisma-zero
@@ -178,6 +172,8 @@ bun add -D prisma-zero
 bunx prisma generate
 ```
 
+**yarn**
+
 ```bash
 yarn add -D prisma-zero
 # Add this to prisma/schema.prisma:
@@ -187,6 +183,8 @@ yarn add -D prisma-zero
 # }
 yarn prisma generate
 ```
+
+**Manual**
 
 ```ts
 // src/zero/schema.ts
@@ -223,26 +221,7 @@ declare module '@rocicorp/zero' {
 
 Zero has first-class support for React and SolidJS, and there is also a low-level API you can use in any TypeScript-based project. Choose the tab that most closely matches where your app creates its root layout or client instance.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```tsx
 // src/routes/__root.tsx
@@ -269,14 +248,18 @@ function RootDocument({children}: {children: ReactNode}) {
   return (
     <html lang="en">
       <head>
+        <HeadContent />
       </head>
       <body>
         <ZeroProvider {...opts}>{children}</ZeroProvider>
+        <Scripts />
       </body>
     </html>
   )
 }
 ```
+
+**Next.js**
 
 ```tsx
 // src/app/providers.tsx
@@ -319,6 +302,8 @@ export default function RootLayout({
 }
 ```
 
+**SolidStart**
+
 ```tsx
 // src/app.tsx
 import {MetaProvider, Title} from '@solidjs/meta'
@@ -336,15 +321,23 @@ const opts: ZeroOptions = {
 
 export default function App() {
   return (
+    <ZeroProvider {...opts}>
       <Router
         root={props => (
+          <MetaProvider>
             <Title>Zero App</Title>
             <Suspense>{props.children}</Suspense>
+          </MetaProvider>
         )}
       >
+        <FileRoutes />
+      </Router>
+    </ZeroProvider>
   )
 }
 ```
+
+**TypeScript**
 
 ```tsx
 // src/zero.ts
@@ -378,7 +371,7 @@ export const queries = defineQueries({
 })
 ```
 
-See [Reading Data](/docs/queries) for more on filters, sorting, relationships, and permissions.
+See [Reading Data](queries.md) for more on filters, sorting, relationships, and permissions.
 
 ### Add Query Endpoint
 
@@ -386,26 +379,7 @@ Zero doesn't allow clients to send arbitrary ZQL to `zero-cache`.
 
 Instead, Zero sends the query name and arguments to the `query` endpoint on your server, which responds to `zero-cache` with the authoritative ZQL. This prevents clients from reading arbitrary data and is the basis of permissions.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {api: 'solid'},
-    },
-    {
-      text: 'Hono',
-      sync: {api: 'hono'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```ts
 // src/routes/api/query.ts
@@ -436,6 +410,8 @@ export const Route = createFileRoute('/api/query')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // src/app/api/query/route.ts
 import {handleQueryRequest} from '@rocicorp/zero/server'
@@ -457,6 +433,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**SolidStart**
 
 ```ts
 // src/routes/api/query.ts
@@ -480,6 +458,8 @@ export async function POST(event: APIEvent) {
   return Response.json(result)
 }
 ```
+
+**Hono**
 
 ```ts
 // src/api/app.ts
@@ -510,22 +490,7 @@ app.post('/api/query', async c => {
 
 Querying for data is framework-specific. Most of the time, you will use a helper like `useQuery` that integrates into your framework's rendering model:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'React',
-      sync: {client: 'react'},
-    },
-    {
-      text: 'SolidJS',
-      sync: {client: 'solidjs'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**React**
 
 ```tsx
 import {useQuery} from '@rocicorp/zero/react'
@@ -534,12 +499,16 @@ import {queries} from './zero/queries'
 const [users] = useQuery(queries.allUsers())
 ```
 
+**SolidJS**
+
 ```tsx
 import {useQuery} from '@rocicorp/zero/solid'
 import {queries} from './zero/queries'
 
 const [users] = useQuery(() => queries.allUsers())
 ```
+
+**TypeScript**
 
 ```tsx
 import {zero} from './zero'
@@ -550,8 +519,8 @@ const users = await zero.run(queries.allUsers())
 
 ### More about Queries
 
-- [Filters, sorting, relationships, preloading, and more](/docs/queries)
-- [Server-driven authentication](/docs/auth)
+* [Filters, sorting, relationships, preloading, and more](queries.md)
+* [Server-driven authentication](auth.md)
 
 ## Mutate Data
 
@@ -574,30 +543,11 @@ export const mutators = defineMutators({
 })
 ```
 
-You can use the [CRUD-style API](/docs/mutators#writing-data) with `tx.mutate.<table>.<method>()` to write data. You can also use `tx.run(zql.<table>.<method>)` to run queries within your mutator.
+You can use the [CRUD-style API](mutators.md#writing-data) with `tx.mutate.<table>.<method>()` to write data. You can also use `tx.run(zql.<table>.<method>)` to run queries within your mutator.
 
 Register the mutators where you create the Zero client:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```tsx {3,9}
 // src/routes/__root.tsx
@@ -612,6 +562,8 @@ const opts: ZeroOptions = {
 }
 ```
 
+**Next.js**
+
 ```tsx {3,9}
 // src/app/providers.tsx
 import type {ZeroOptions} from '@rocicorp/zero'
@@ -625,6 +577,8 @@ const opts: ZeroOptions = {
 }
 ```
 
+**SolidStart**
+
 ```tsx {3,9}
 // src/app.tsx
 import type {ZeroOptions} from '@rocicorp/zero'
@@ -637,6 +591,8 @@ const opts: ZeroOptions = {
   mutators
 }
 ```
+
+**TypeScript**
 
 ```tsx {3,9}
 // src/zero.ts
@@ -657,30 +613,7 @@ Zero requires a `mutate` endpoint that runs on your server and connects directly
 
 First, create a `dbProvider` with the Postgres adapter that matches your stack. These examples assume the selected database client is already installed in your app.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'Drizzle',
-      sync: {pgClient: 'drizzle'},
-    },
-    {
-      text: 'Kysely',
-      sync: {pgClient: 'kysely'},
-    },
-    {
-      text: 'Prisma',
-      sync: {pgClient: 'prisma'},
-    },
-    {
-      text: 'node-postgres',
-      sync: {pgClient: 'node-postgres'},
-    },
-    {
-      text: 'postgres.js',
-      sync: {pgClient: 'postgres-js'},
-    },
-  ]}
->
+**Drizzle**
 
 ```ts
 // src/zero/db-provider.ts
@@ -714,6 +647,8 @@ declare module '@rocicorp/zero' {
 }
 ```
 
+**Kysely**
+
 ```ts
 // src/zero/db-provider.ts
 import {Kysely, PostgresDialect} from 'kysely'
@@ -745,6 +680,8 @@ declare module '@rocicorp/zero' {
 }
 ```
 
+**Prisma**
+
 ```ts
 // src/zero/db-provider.ts
 import {PrismaPg} from '@prisma/adapter-pg'
@@ -773,6 +710,8 @@ declare module '@rocicorp/zero' {
 }
 ```
 
+**node-postgres**
+
 ```ts
 // src/zero/db-provider.ts
 import {zeroNodePg} from '@rocicorp/zero/server/adapters/pg'
@@ -797,6 +736,8 @@ declare module '@rocicorp/zero' {
   }
 }
 ```
+
+**postgres.js**
 
 ```ts
 // src/zero/db-provider.ts
@@ -823,26 +764,7 @@ declare module '@rocicorp/zero' {
 
 Then use the `dbProvider` and helpers to define the mutate endpoint:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {api: 'solid'},
-    },
-    {
-      text: 'Hono',
-      sync: {api: 'hono'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```ts
 // src/routes/api/mutate.ts
@@ -874,6 +796,8 @@ export const Route = createFileRoute('/api/mutate')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // src/app/api/mutate/route.ts
 import {handleMutateRequest} from '@rocicorp/zero/server'
@@ -896,6 +820,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**SolidStart**
 
 ```ts
 // src/routes/api/mutate.ts
@@ -921,6 +847,8 @@ export async function POST(event: APIEvent) {
 }
 ```
 
+**Hono**
+
 ```ts
 // src/api/app.ts
 import {handleMutateRequest} from '@rocicorp/zero/server'
@@ -944,27 +872,13 @@ app.post('/api/mutate', async c => {
 })
 ```
 
-Mutators on the server allow for write permissions and can be different from the client implementation.
-You can also do work after a mutation runs on the server, like send notifications.
+Mutators on the server allow for write permissions and can be different from the client implementation. You can also do work after a mutation runs on the server, like send notifications.
 
-> **Add auth if you need it**
->
-> These examples have only public queries and mutators, so
->   they do not pass a context. In authenticated apps, you
->   should validate auth in the request, derive context from
->   the session, and pass the context to the mutate and query
->   handlers. See [Authentication](/docs/auth).
+> 🔐 **Add auth if you need it**: These examples have only public queries and mutators, so they do not pass a context. In authenticated apps, you should validate auth in the request, derive context from the session, and pass the context to the mutate and query handlers. See [Authentication](auth.md).
 
 Start your app server in another terminal, then run `zero-cache` locally with `ZERO_QUERY_URL` and `ZERO_MUTATE_URL` configured. If your app uses a different origin, update `localhost:3000`.
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-    {text: 'yarn', sync: {pm: 'yarn'}},
-  ]}
->
+**npm**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -972,17 +886,23 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
   npx zero-cache-dev
 ```
 
+**pnpm**
+
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
   ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
   pnpm exec zero-cache-dev
 ```
 
+**bun**
+
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
   ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
   bunx zero-cache-dev
 ```
+
+**yarn**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -994,22 +914,7 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
 
 You can call a mutator with `zero.mutate`:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'React',
-      sync: {client: 'react'},
-    },
-    {
-      text: 'SolidJS',
-      sync: {client: 'solidjs'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**React**
 
 ```tsx
 import {useZero} from '@rocicorp/zero/react'
@@ -1022,6 +927,8 @@ const onClick = () => {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 import {useZero} from '@rocicorp/zero/solid'
 import {mutators} from './zero/mutators'
@@ -1032,6 +939,8 @@ const onClick = () => {
   zero().mutate(mutators.activateUser({id: '1'}))
 }
 ```
+
+**TypeScript**
 
 ```tsx
 import {zero} from './zero'
@@ -1046,6 +955,8 @@ Your mutate endpoint writes to Postgres and zero-cache will instantly replicate 
 
 ### More about Mutators
 
-- [CRUD, server-specific code, permissions, and more](/docs/mutators)
-- [Server-driven auth and Context](/docs/auth)
-- [Learn how to deploy your app to production](/docs/self-host)
+* [CRUD, server-specific code, permissions, and more](mutators.md)
+* [Server-driven auth and Context](auth.md)
+* [Learn how to deploy your app to production](self-host.md)
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

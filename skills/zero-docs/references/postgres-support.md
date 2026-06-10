@@ -4,132 +4,26 @@ Postgres has a massive feature set, and Zero supports a growing subset of it.
 
 ## Object Names
 
-- Table and column names must begin with a letter or underscore
-  - This can be followed by letters, numbers, underscores, and hyphens
-  - Regex: `/^[A-Za-z_]+[A-Za-z0-9_-]*$/`
-- The column name `_0_version` is reserved for internal use
+* Table and column names must begin with a letter or underscore
+  * This can be followed by letters, numbers, underscores, and hyphens
+  * Regex: `/^[A-Za-z_]+[A-Za-z0-9_-]*$/`
+* The column name `_0_version` is reserved for internal use
 
 ## Object Types
 
-- Tables are synced.
-- Views are not synced.
-- `generated as identity` columns are synced.
-- In Postgres 18+, `generated stored` columns are synced. In lower Postgres versions they aren't.
-- Indexes aren't _synced_ per-se, but we do implicitly add indexes to the replica that match the upstream indexes. In the future, this will be customizable.
+* Tables are synced.
+* Views are not synced.
+* `generated as identity` columns are synced.
+* In Postgres 18+, `generated stored` columns are synced. In lower Postgres versions they aren't.
+* Indexes aren't *synced* per-se, but we do implicitly add indexes to the replica that match the upstream indexes. In the future, this will be customizable.
 
 ## Column Types
 
-<table>
-  <thead>
-    <tr>
-      <th>Postgres Type</th>
-      <th>
-        Type&nbsp;to&nbsp;put&nbsp;in&nbsp;`schema.ts`
-      </th>
-      <th>Resulting&nbsp;JS/TS&nbsp;Type</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>All numeric types</td>
-      <td>
-        <code>number</code>
-      </td>
-      <td>
-        <code>number</code>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>char</code>, <code>varchar</code>,{' '}
-        <code>text</code>, <code>uuid</code>
-      </td>
-      <td>
-        <code>string</code>
-      </td>
-      <td>
-        <code>string</code>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>bool</code>
-      </td>
-      <td>
-        <code>boolean</code>
-      </td>
-      <td>
-        <code>boolean</code>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>date</code>, <code>timestamp</code>,{' '}
-        <code>timestampz</code>, <code>time</code>,{' '}
-        <code>timetz</code>
-      </td>
-      <td>
-        <code>number</code>
-      </td>
-      <td>
-        <code>number</code>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>json</code>, <code>jsonb</code>
-      </td>
-      <td>
-        <code>json</code>
-      </td>
-      <td>
-        <code>JSONValue</code>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>enum</code>
-      </td>
-      <td>
-        <code>enumeration</code>
-      </td>
-      <td>
-        <code>string</code>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <code>T[]</code>{' '}
-        <em>
-          where <code>T</code> is a supported Postgres type
-          (but please see ⚠️ below)
-        </em>
-      </td>
-      <td>
-        <code>json&lt;U[]&gt;</code>{' '}
-        <em>
-          where <code>U</code> is the schema.ts type for{' '}
-          <code>T</code>
-        </em>
-      </td>
-      <td>
-        <code>V[]</code>{' '}
-        <em>
-          where <code>V</code> is the JS/TS type for{' '}
-          <code>T</code>
-        </em>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-> **No ZQL operators for arrays yet**
->
-> Zero will sync arrays to the client, but there is no support for filtering or joining on array elements yet in ZQL.
+> ⚠️ **No ZQL operators for arrays yet**: Zero will sync arrays to the client, but there is no support for filtering or joining on array elements yet in ZQL.
 
 Other Postgres column types aren’t supported. They will be ignored when replicating (the synced data will be missing that column) and you will get a warning when `zero-cache` starts up.
 
-If your schema has a pg type not listed here, you can support it in Zero by using a trigger to map it to some type that Zero can support. For example if you have a [GIS polygon type](https://www.postgresql.org/docs/current/datatype-geometric.html#DATATYPE-POLYGON) in the column `my_poly polygon`, you can use a trigger to map it to a `my_poly_json json` column. You could either use another trigger to map in the reverse direction to support changes for writes, or you could use a [mutator](/docs/mutators) to write to the polygon type directly on the server.
+If your schema has a pg type not listed here, you can support it in Zero by using a trigger to map it to some type that Zero can support. For example if you have a [GIS polygon type](https://www.postgresql.org/docs/current/datatype-geometric.html#DATATYPE-POLYGON) in the column `my_poly polygon`, you can use a trigger to map it to a `my_poly_json json` column. You could either use another trigger to map in the reverse direction to support changes for writes, or you could use a [mutator](mutators.md) to write to the polygon type directly on the server.
 
 Let us know if the lack of a particular column type is hindering your use of Zero. It can likely be added.
 
@@ -143,9 +37,7 @@ An `insert()` mutation requires all columns to be specified, except when columns
 
 It is strongly recommended to use client-generated random strings like [crypto.randomUUID()](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID), [uuid](https://www.npmjs.com/package/uuid), [ulid](https://www.npmjs.com/package/ulid), [nanoid](https://www.npmjs.com/package/nanoid), etc for primary keys. This makes optimistic creation and updates much easier.
 
-> **Why are client-generated IDs better?**
->
-> Imagine that the PK of your table is an auto-incrementing integer. If you optimistically create an entity of this type, you will have to give it some ID – the type will require it locally, but also if you want to optimistically create relationships to this row you’ll need an ID.
+> **Why are client-generated IDs better?**: Imagine that the PK of your table is an auto-incrementing integer. If you optimistically create an entity of this type, you will have to give it some ID – the type will require it locally, but also if you want to optimistically create relationships to this row you’ll need an ID.
 >
 > You could sync the highest value seen for that table, but there are race conditions and it is possible for that ID to be taken by the time the creation makes it to the server. Your database can resolve this and assign the next ID, but now the relationships you created optimistically will be against the wrong row. Blech.
 >
@@ -167,7 +59,7 @@ There are two levels of replication to consider with Zero: replicating from Post
 
 ### zero-cache replication
 
-By default, Zero creates a Postgres [_publication_](https://www.postgresql.org/docs/current/sql-createpublication.html) that publishes all tables in the `public` schema to zero-cache.
+By default, Zero creates a Postgres [*publication*](https://www.postgresql.org/docs/current/sql-createpublication.html) that publishes all tables in the `public` schema to zero-cache.
 
 To limit which tables or columns are replicated to zero-cache, you can create a Postgres `publication` with the tables and columns you want:
 
@@ -175,14 +67,16 @@ To limit which tables or columns are replicated to zero-cache, you can create a 
 CREATE PUBLICATION zero_data FOR TABLE users (col1, col2, col3, ...), issues, comments;
 ```
 
-Then, specify this publication in the [App Publications](/docs/zero-cache-config#app-publications) `zero-cache` option.
+Then, specify this publication in the [App Publications](zero-cache-config.md#app-publications) `zero-cache` option.
 
 ### Browser client replication
 
-You can use [Read Permissions](auth#read-permissions) to control which rows are synced from the `zero-cache` replica to actual clients (e.g., web browsers).
+You can use [Read Permissions](auth.md#read-permissions) to control which rows are synced from the `zero-cache` replica to actual clients (e.g., web browsers).
 
 Currently, Permissions can limit which tables and rows can be replicated to the client. In the near future, you'll also be able to use Permissions to limit syncing individual columns. Until then, you will need to create a publication to control which columns are synced to zero-cache.
 
 ## Schema changes
 
-All Postgres schema changes are supported. See [Schema Migrations](/docs/schema#schema-changes).
+All Postgres schema changes are supported. See [Schema Migrations](schema.md#schema-changes).
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

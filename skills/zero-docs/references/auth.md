@@ -11,27 +11,31 @@ Setting up auth in Zero apps has the following steps:
 
 Your app will already know the logged-in user from whatever auth provider you use. Pass this `userID` to Zero on construction:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
 
 return (
+  <ZeroProvider userID={userID}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**SolidJS**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/solid'
 
 return (
+  <ZeroProvider userID={userID}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**TypeScript**
 
 ```ts
 import {Zero} from '@rocicorp/zero'
@@ -45,27 +49,31 @@ const zero = new Zero({
 
 If the user is logged out, omit `userID`, or set to `undefined` / `null`:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
 
 return (
+  <ZeroProvider userID={null}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**SolidJS**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/solid'
 
 return (
+  <ZeroProvider userID={null}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**TypeScript**
 
 ```ts
 const zero = new Zero({
@@ -76,11 +84,7 @@ const zero = new Zero({
 
 Zero uses the `userID` field to segregate the client-side storage for each user. This allows users to quickly switch between multiple users and accounts without resyncing.
 
-> **Users that have share computers have access to each others' data**
->
-> There is nothing
->   that Zero can do about this – users can just open the
->   folder where the data is stored and look inside it.
+> 🧑‍🏫 **Users that have share computers have access to each others' data**: There is nothing that Zero can do about this – users can just open the folder where the data is stored and look inside it.
 >
 > If preventing this is important to you, set `kvStore: 'mem'` in your `ZeroOptions`. This uses in-memory storage instead, so data is not persisted on the device and is cleared on full reloads and browser restarts.
 
@@ -96,14 +100,11 @@ const opts: ZeroOptions = {
 
 If specified, `storageKey` is concatenated along with `userID` and other internal Zero information to form a unique IndexedDB database name.
 
-<ImageLightbox
-  src="/images/auth/indexeddb.png"
-  caption="Zero's IndexedDB databases are prefixed with 'rep' or 'replicache' because reasons."
-/>
+![Zero's IndexedDB databases are prefixed with 'rep' or 'replicache' because reasons.](https://zero.rocicorp.dev/images/auth/indexeddb.png)
 
 ## Define the `Context` Type
 
-When a user is authenticated, you will want to know who they are in your [queries](/docs/queries) and [mutators](/docs/mutators) to enforce permissions.
+When a user is authenticated, you will want to know who they are in your [queries](queries.md) and [mutators](mutators.md) to enforce permissions.
 
 To do this, first define a `Context` type that includes the user's ID and any other relevant information, then register that type globally with Zero:
 
@@ -155,7 +156,7 @@ Both cookies and tokens are supported.
 
 The most common way to authenticate Zero is with cookies.
 
-To enable it, set the [`ZERO_QUERY_FORWARD_COOKIES`](/docs/zero-cache-config#query-forward-cookies) and [`ZERO_MUTATE_FORWARD_COOKIES`](/docs/zero-cache-config#mutate-forward-cookies) options to `true`:
+To enable it, set the [`ZERO_QUERY_FORWARD_COOKIES`](zero-cache-config.md#query-forward-cookies) and [`ZERO_MUTATE_FORWARD_COOKIES`](zero-cache-config.md#mutate-forward-cookies) options to `true`:
 
 ```bash
 # ... other env vars
@@ -164,16 +165,9 @@ export ZERO_MUTATE_FORWARD_COOKIES="true"
 # run zero-cache, e.g. `npx zero-cache-dev`
 ```
 
-Zero-cache will then forward all cookies sent to `cacheURL` to your [mutators](/docs/mutators) and [queries](/docs/queries) endpoints. Cookies will show up in the normal HTTP `Cookie` header and you can authenticate these endpoints just like you would any API request:
+Zero-cache will then forward all cookies sent to `cacheURL` to your [mutators](mutators.md) and [queries](queries.md) endpoints. Cookies will show up in the normal HTTP `Cookie` header and you can authenticate these endpoints just like you would any API request:
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -193,6 +187,8 @@ export const Route = createFileRoute('/api/zero/query')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // app/api/zero/query/route.ts
 export async function POST(request: Request) {
@@ -202,6 +198,8 @@ export async function POST(request: Request) {
   // ... handle query ...
 }
 ```
+
+**Solid Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -214,6 +212,8 @@ export async function POST(event: APIEvent) {
   // ... handle query ...
 }
 ```
+
+**Hono**
 
 ```ts
 // api/app.ts
@@ -241,9 +241,7 @@ For production you'll need to do two things:
 1. Run `zero-cache` on a subdomain of your main site (e.g., `zero.example.com` if your main site is `example.com`). Consult your hosting provider's docs, or your favorite LLM for how to configure this.
 2. Set cookies from your main site with the `Domain` attribute set to your root domain (e.g., `.example.com`). If you use a third-party auth provider, consult their docs on how to do this. For example, for Better Auth, this is done with the [`crossSubDomainCookies`](https://www.better-auth.com/docs/concepts/cookies#cross-subdomain-cookies) feature.
 
-> **Never use SameSite=None for auth cookies**
->
-> Do not set `SameSite=None` on cookies used for authentication with Zero. Because Zero uses WebSockets, setting `SameSite=None` can expose your application to [Cross-Site WebSocket Hijacking (CSWSH)](https://christian-schneider.net/CrossSiteWebSocketHijacking.html) attacks.
+> ⚠️ **Never use SameSite=None for auth cookies**: Do not set `SameSite=None` on cookies used for authentication with Zero. Because Zero uses WebSockets, setting `SameSite=None` can expose your application to [Cross-Site WebSocket Hijacking (CSWSH)](https://christian-schneider.net/CrossSiteWebSocketHijacking.html) attacks.
 >
 > Use `SameSite=Lax` (the browser default) or `SameSite=Strict` instead.
 
@@ -253,27 +251,31 @@ Zero also supports token-based authentication.
 
 If you have an opaque auth token, such as a JWT or a token from your auth provider, you can pass it to Zero's `auth` parameter:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
 
 return (
+  <ZeroProvider userID={userID} auth={token}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**SolidJS**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/solid'
 
 return (
+  <ZeroProvider userID={userID} auth={token}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**TypeScript**
 
 ```ts
 const zero = new Zero({
@@ -283,16 +285,9 @@ const zero = new Zero({
 })
 ```
 
-Zero will forward this token to your [mutators](/docs/mutators) and [queries](/docs/queries) endpoints in an `Authorization: Bearer <token>` header:
+Zero will forward this token to your [mutators](mutators.md) and [queries](queries.md) endpoints in an `Authorization: Bearer <token>` header:
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -312,6 +307,8 @@ export const Route = createFileRoute('/api/zero/query')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // app/api/zero/query/route.ts
 export async function POST(request: Request) {
@@ -321,6 +318,8 @@ export async function POST(request: Request) {
   // ... handle query ...
 }
 ```
+
+**Solid Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -333,6 +332,8 @@ export async function POST(event: APIEvent) {
   // ... handle query ...
 }
 ```
+
+**Hono**
 
 ```ts
 // api/app.ts
@@ -351,18 +352,11 @@ app.post('/api/zero/query', async c => {
 
 ## Implement API Endpoints
 
-Create a Context object from the validated credentials and pass it to your [query](/docs/queries#server-setup) and [mutator](/docs/mutators#server-setup) functions.
+Create a Context object from the validated credentials and pass it to your [query](queries.md#server-setup) and [mutator](mutators.md#server-setup) functions.
 
 ### Query
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -400,6 +394,8 @@ export const Route = createFileRoute('/api/zero/query')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // app/api/zero/query/route.ts
 import {handleQueryRequest} from '@rocicorp/zero/server'
@@ -428,6 +424,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**Solid Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -458,6 +456,8 @@ export async function POST(event: APIEvent) {
   return Response.json(result)
 }
 ```
+
+**Hono**
 
 ```ts
 // api/app.ts
@@ -494,14 +494,7 @@ app.post('/api/zero/query', async c => {
 
 ### Mutate
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 // src/routes/api/zero/mutate.ts
@@ -541,6 +534,8 @@ export const Route = createFileRoute('/api/zero/mutate')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // app/api/zero/mutate/route.ts
 import {handleMutateRequest} from '@rocicorp/zero/server'
@@ -571,6 +566,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**Solid Start**
 
 ```ts
 // src/routes/api/zero/mutate.ts
@@ -603,6 +600,8 @@ export async function POST(event: APIEvent) {
   return Response.json(result)
 }
 ```
+
+**Hono**
 
 ```ts
 // api/app.ts
@@ -639,22 +638,11 @@ app.post('/api/zero/mutate', async c => {
 })
 ```
 
-> **Why pass `userID` to `handleMutateRequest` and `handleQueryRequest`?**
+> **Why pass `userID` to `handleMutateRequest` and `handleQueryRequest`?**: Tabs in the same browser share synced data. This group of tabs is called a "client group", keyed by `clientGroupID`. New tabs join a client group by providing the `clientGroupID` during connection.
 >
-> Tabs in the same browser share synced data. This group of
->   tabs is called a "client group", keyed by `clientGroupID`.
->   New tabs join a client group by providing the
->   `clientGroupID` during connection.
+> The `clientGroupID` is randomly-generated client-side and non-trivial for attackers to guess. However, it could be stolen with XSS or leaked in logs.
 >
-> The `clientGroupID` is
-> randomly-generated client-side and non-trivial for
-> attackers to guess. However, it could be stolen with XSS
-> or leaked in logs.
->
-> Passing the server-verified `userID` to
-> `handleMutateRequest` and `handleQueryRequest` lets Zero
-> enforce that only tabs belonging to the same user can be
-> in the same client group.
+> Passing the server-verified `userID` to `handleMutateRequest` and `handleQueryRequest` lets Zero enforce that only tabs belonging to the same user can be in the same client group.
 
 ## Updating Tokens
 
@@ -671,7 +659,7 @@ Use this only to refresh credentials for the current user. For logging out or lo
 
 ## Auth Failure and Refresh
 
-To mark a request as unauthorized, return a `401` or `403` status code from your [queries](/docs/queries) or [mutators](/docs/mutators) endpoint.
+To mark a request as unauthorized, return a `401` or `403` status code from your [queries](queries.md) or [mutators](mutators.md) endpoint.
 
 ```ts
 const session = await authenticate(
@@ -689,7 +677,7 @@ if (!session) {
 // handle mutate/query request ...
 ```
 
-This will cause Zero to disconnect from `zero-cache` and the [connection status](/docs/connection) will change to `needs-auth`. For cookie auth, refresh the cookie and call `zero.connection.connect()`. For token auth, fetch a new token and call `zero.connection.connect({auth: newToken})`.
+This will cause Zero to disconnect from `zero-cache` and the [connection status](connection.md) will change to `needs-auth`. For cookie auth, refresh the cookie and call `zero.connection.connect()`. For token auth, fetch a new token and call `zero.connection.connect({auth: newToken})`.
 
 ```tsx
 function NeedsAuthDialog() {
@@ -743,7 +731,7 @@ function NeedsAuthDialog() {
 
 Zero does not have (or need) a first-class permission system like [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
-Instead, you implement permissions by authenticating the user in your [queries](/docs/queries) and [mutators](/docs/mutators) endpoints, and creating a [Context](#context) object that contains the user's ID and other information. This context is passed to your queries and mutators and used to control what data the user can access.
+Instead, you implement permissions by authenticating the user in your [queries](queries.md) and [mutators](mutators.md) endpoints, and creating a [Context](#context) object that contains the user's ID and other information. This context is passed to your queries and mutators and used to control what data the user can access.
 
 Here are a collection of common permissions patterns and how to implement them in Zero.
 
@@ -787,9 +775,7 @@ const allowedPosts = defineQuery(({ctx}) => {
 
 #### Deny by Returning No Rows
 
-Read permissions in Zero are filter-based. If a user should not be able to see
-any rows for a query, return a query that matches no rows instead of throwing an
-error.
+Read permissions in Zero are filter-based. If a user should not be able to see any rows for a query, return a query that matches no rows instead of throwing an error.
 
 ```ts
 // The empty `or()` expression is always false,
@@ -925,3 +911,5 @@ await zero.delete()
 ```
 
 This immediately closes the `Zero` instance and deletes all data from the browser's IndexedDB database.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

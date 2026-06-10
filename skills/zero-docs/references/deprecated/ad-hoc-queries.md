@@ -1,9 +1,6 @@
 # Ad-Hoc Queries (Deprecated)
 
-> **This API is deprecated**
->
-> It will be removed in a future release of Zero. Please
->   move to the new [queries](/docs/queries) API.
+> 😵 **This API is deprecated**: It will be removed in a future release of Zero. Please move to the new [queries](../queries.md) API.
 
 ## Overview
 
@@ -23,4 +20,6 @@ const zero = new Zero(...);
 const issues = await zero.query.issue.where('priority', 'high').run();
 ```
 
-Each table is a ZQL builder object. See [ZQL](/docs/zql) for details.
+Each table is a ZQL builder object. See [ZQL](../zql.md) for details.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

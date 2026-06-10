@@ -11,8 +11,9 @@ import {
 } from 'node:fs';
 import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { collectDocs } from './lib/collect.mjs';
+import { collectMeta } from './lib/collect.mjs';
 import { buildIndex } from './lib/index-gen.mjs';
+import { finalizeDoc, rewriteDocLinks } from './lib/transform.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VENDOR = join(ROOT, '.vendor', 'zero-docs');
@@ -22,6 +23,7 @@ const REFS = join(SKILL, 'references');
 const INDEX = join(SKILL, 'INDEX.md');
 const SOURCE = join(ROOT, 'SOURCE.md');
 const REPO = 'https://github.com/rocicorp/zero-docs';
+const SITE = 'https://zero.rocicorp.dev/docs/';
 
 const checkMode = process.argv.includes('--check');
 
@@ -34,6 +36,31 @@ function cloneUpstream() {
   return execFileSync('git', ['-C', VENDOR, 'rev-parse', 'HEAD'], {
     encoding: 'utf8',
   }).trim();
+}
+
+/** Fetch every entry's rendered markdown with bounded concurrency. */
+async function fetchBodies(entries, concurrency = 8) {
+  const bodies = new Map();
+  const errors = [];
+  const queue = [...entries];
+  await Promise.all(
+    Array.from({ length: concurrency }, async () => {
+      for (let e; (e = queue.shift()); ) {
+        const url = SITE + e.path;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          bodies.set(e.path, await res.text());
+        } catch (err) {
+          errors.push(url + ' — ' + (err.message || err));
+        }
+      }
+    }),
+  );
+  if (errors.length) {
+    throw new Error('Failed to fetch rendered docs:\n  ' + errors.join('\n  '));
+  }
+  return bodies;
 }
 
 /** Read currently committed references/ into a Map<relPath, content>. */
@@ -51,14 +78,16 @@ function readExistingRefs() {
   return out;
 }
 
-function main() {
+async function main() {
   const sha = cloneUpstream();
-  const { files, entries, unknown } = collectDocs(DOCS);
-  const index = buildIndex(entries);
-
-  if (unknown.size) {
-    console.warn('Note: stripped unrecognized components: ' + [...unknown].sort().join(', '));
+  const entries = collectMeta(DOCS);
+  const fileSet = new Set(entries.map((e) => e.path));
+  const bodies = await fetchBodies(entries);
+  const files = new Map();
+  for (const e of entries) {
+    files.set(e.path, rewriteDocLinks(finalizeDoc(bodies.get(e.path), e.title), e.path, fileSet));
   }
+  const index = buildIndex(entries);
 
   if (checkMode) {
     const existing = readExistingRefs();
@@ -84,9 +113,10 @@ function main() {
   writeFileSync(INDEX, index);
   writeFileSync(
     SOURCE,
-    '# Source\n\nGenerated from ' + REPO + '\nUpstream commit: ' + sha + '\n',
+    '# Source\n\nDoc list and metadata from ' + REPO + '\nUpstream commit: ' + sha +
+      '\nPage bodies fetched from ' + SITE + '{path} (build-rendered markdown)\n',
   );
   console.log('Synced ' + files.size + ' docs from ' + sha);
 }
 
-main();
+await main();

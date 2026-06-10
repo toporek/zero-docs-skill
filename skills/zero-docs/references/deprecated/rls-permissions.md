@@ -1,18 +1,14 @@
 # RLS Permissions (Deprecated)
 
-> **This API is deprecated**
->
-> It will be removed in a future release of Zero. See
->   [Permissions](/docs/auth#permission-patterns) for more
->   information.
+> 🧟 **This API is deprecated**: It will be removed in a future release of Zero. See [Permissions](../auth.md#permission-patterns) for more information.
 
-Permissions are expressed using [ZQL](/docs/queries) and run automatically with every read and write.
+Permissions are expressed using [ZQL](../queries.md) and run automatically with every read and write.
 
 Permissions are currently row based. Zero will eventually also have column permissions.
 
 ## Define Permissions
 
-Permissions are defined in [`schema.ts`](/docs/schema) using the `definePermissions` function.
+Permissions are defined in [`schema.ts`](../schema.md) using the `definePermissions` function.
 
 Here's an example of limiting reads to members of an organization and deletes to only the creator of an issue:
 
@@ -55,7 +51,7 @@ export const permissions = definePermissions<
 })
 ```
 
-`definePermission` returns a _policy_ object for each table in the schema. Each policy defines a _ruleset_ for the _operations_ that are possible on a table: `select`, `insert`, `update`, and `delete`.
+`definePermission` returns a *policy* object for each table in the schema. Each policy defines a *ruleset* for the *operations* that are possible on a table: `select`, `insert`, `update`, and `delete`.
 
 ## Access is Denied by Default
 
@@ -104,15 +100,13 @@ const permissions = definePermissions<AuthData, Schema>(
 
 Zero permissions are "compiled" into a JSON-based format at build-time. This file is stored in the `{ZERO_APP_ID}.permissions` table of your upstream database. Like other tables, it replicates live down to `zero-cache`. `zero-cache` then parses this file, and applies the encoded rules to every read and write operation.
 
-> **Note**
->
 > The compilation process is very simple-minded (read: dumb). Despite looking like normal TypeScript functions that receive an `AuthData` parameter, rule functions are not actually invoked at runtime. Instead, they are invoked with a "placeholder" `AuthData` at build time. We track which fields of this placeholder are accessed and construct a ZQL expression that accesses the right field of `AuthData` at runtime.
 >
 > The end result is that you can't really use most features of JS in these rules. Specifically you cannot:
 >
-> - Iterate over properties or array elements in the auth token
-> - Use any JS features beyond property access of `AuthData`
-> - Use any conditional or global state
+> * Iterate over properties or array elements in the auth token
+> * Use any JS features beyond property access of `AuthData`
+> * Use any conditional or global state
 >
 > Basically only property access is allowed. This is really confusing and we're working on a better solution.
 
@@ -120,7 +114,7 @@ Zero permissions are "compiled" into a JSON-based format at build-time. This fil
 
 During development, permissions are compiled and uploaded to your database completely automatically as part of the `zero-cache-dev` script.
 
-For production, you need to call `npx zero-deploy-permissions` within your app to update the permissions in the production database whenever they change. You would typically do this as part of your normal schema migration or CI process. For example, the SST deployment script for [Gigabugs](/docs/samples#gigabugs) looks like this:
+For production, you need to call `npx zero-deploy-permissions` within your app to update the permissions in the production database whenever they change. You would typically do this as part of your normal schema migration or CI process. For example, the SST deployment script for [Gigabugs](../samples.md#gigabugs) looks like this:
 
 ```ts
 new command.local.Command(
@@ -140,13 +134,13 @@ new command.local.Command(
 )
 ```
 
-See the [deployment guide](/docs/self-host) for more details.
+See the [deployment guide](../self-host.md) for more details.
 
 ## Rules
 
-Each operation on a policy has a _ruleset_ containing zero or more _rules_.
+Each operation on a policy has a *ruleset* containing zero or more *rules*.
 
-A rule is just a TypeScript function that receives the logged in user's `AuthData` and generates a ZQL [where expression](/docs/zql#compound-filters). At least one rule in a ruleset must return a row for the operation to be allowed.
+A rule is just a TypeScript function that receives the logged in user's `AuthData` and generates a ZQL [where expression](../zql.md#compound-filters). At least one rule in a ruleset must return a row for the operation to be allowed.
 
 ## Select Permissions
 
@@ -175,11 +169,9 @@ definePermissions<AuthData, Schema>(schema, () => {
 
 If the issue table has two rows, one created by the user and one by someone else, the user will only see the row they created in any queries.
 
-> **Column permissions are not currently supported**
+> **Column permissions are not currently supported**: Select permission applies to every column. The recommended approach for now is to factor out private fields into a separate table, e.g. `user_private`. Column permissions are planned but currently not a high priority.
 >
-> Select permission applies to every column. The recommended approach for now is to factor out private fields into a separate table, e.g. `user_private`. Column permissions are planned but currently not a high priority.
->
-> Note that although the same limitation applies to declarative insert/update permissions, [custom mutators](/docs/mutators) support arbitrary server-side logic and so can easily control which columns are writable.
+> Note that although the same limitation applies to declarative insert/update permissions, [custom mutators](../mutators.md) support arbitrary server-side logic and so can easily control which columns are writable.
 
 ## Insert Permissions
 
@@ -210,9 +202,9 @@ definePermissions<AuthData, Schema>(schema, () => {
 
 There are two types of update rulesets: `preMutation` and `postMutation`. Both rulesets must pass for an update to be allowed.
 
-`preMutation` rules see the version of a row _before_ the mutation is applied. This is useful for things like checking whether a user owns an entity before editing it.
+`preMutation` rules see the version of a row *before* the mutation is applied. This is useful for things like checking whether a user owns an entity before editing it.
 
-`postMutation` rules see the version of a row _after_ the mutation is applied. This is useful for things like ensuring a user can only mark themselves as the creator of an entity and not other users.
+`postMutation` rules see the version of a row *after* the mutation is applied. This is useful for things like ensuring a user can only mark themselves as the creator of an entity and not other users.
 
 Like other rulesets, `preMutation` and `postMutation` default to `NOBODY_CAN`. This means that every table must define both these rulesets in order for any updates to be allowed.
 
@@ -260,7 +252,7 @@ definePermissions<AuthData, Schema>(schema, () => {
 })
 ```
 
-And this allows anyone to edit an issue, but only if they also assign it to themselves. Useful for enforcing _"patches welcome"_? 🙃
+And this allows anyone to edit an issue, but only if they also assign it to themselves. Useful for enforcing *"patches welcome"*? 🙃
 
 ```ts
 definePermissions<AuthData, Schema>(schema, () => {
@@ -284,11 +276,11 @@ definePermissions<AuthData, Schema>(schema, () => {
 
 ## Delete Permissions
 
-Delete permissions work in the same way as `insert` permissions except they run _before_ the delete is applied. So if a delete rule queries the database, it will see that the deleted row is present. If any rule in the ruleset returns a row, the delete is allowed.
+Delete permissions work in the same way as `insert` permissions except they run *before* the delete is applied. So if a delete rule queries the database, it will see that the deleted row is present. If any rule in the ruleset returns a row, the delete is allowed.
 
 ## Permissions Based on Auth Data
 
-You can use the [`cmpLit` helper](/docs/zql#comparing-literal-values) to define permissions based on a field of the `authData` parameter:
+You can use the [`cmpLit` helper](../zql.md#comparing-literal-values) to define permissions based on a field of the `authData` parameter:
 
 ```ts
 definePermissions<AuthData, Schema>(schema, () => {
@@ -335,11 +327,7 @@ npx analyze-query
   --auth-data='{"userId":"user-123"}'
 ```
 
-> **Note**
->
-> The printed query can be different than the source ZQL
->   string, because it is rebuilt from the query AST. But it
->   should be logically equivalent to the query you wrote.
+> The printed query can be different than the source ZQL string, because it is rebuilt from the query AST. But it should be logically equivalent to the query you wrote.
 
 ### Write Permissions
 
@@ -351,8 +339,6 @@ Permission check failed for {"op":"update","tableName":"message",...}, action up
 
 Zero prints the row, auth data, and permission policies that was applied to any failed writes.
 
-> **Note**
->
-> The ZQL query is printed in AST format. See [Query
->   ASTs](/docs/debug/query-asts) to convert it to a more
->   readable format.
+> The ZQL query is printed in AST format. See [Query ASTs](../debug/query-asts.md) to convert it to a more readable format.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

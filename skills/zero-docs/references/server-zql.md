@@ -4,47 +4,17 @@ The Zero package includes utilities to run ZQL on the server directly against yo
 
 This is useful for many reasons:
 
-- It allows [mutators](/docs/mutators) to read data using ZQL to check permissions or invariants.
-- You can use ZQL to implement standard REST endpoints, allowing you to share code with mutators.
-- In the future ([but not yet implemented](#ssr)), this can support server-side rendering.
+* It allows [mutators](mutators.md) to read data using ZQL to check permissions or invariants.
+* You can use ZQL to implement standard REST endpoints, allowing you to share code with mutators.
+* In the future ([but not yet implemented](#ssr)), this can support server-side rendering.
 
-> **Note**
->
-> `ZQLDatabase` currently does a read of your postgres
->   schema before every transaction. This is fine for most
->   usages, but for high scale it may become a problem. [Let
->   us know](https://bugs.rocicorp.dev/issue/3799) if you need
->   a fix for this.
+> `ZQLDatabase` currently does a read of your postgres schema before every transaction. This is fine for most usages, but for high scale it may become a problem. [Let us know](https://bugs.rocicorp.dev/issue/3799) if you need a fix for this.
 
 ## Creating a Database
 
-To run ZQL on the server, you will create a `ZQLDatabase` instance. Zero ships with
-several built-in factories for popular Postgres libraries and ORMs.
+To run ZQL on the server, you will create a `ZQLDatabase` instance. Zero ships with several built-in factories for popular Postgres libraries and ORMs.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'Drizzle',
-      sync: {pgClient: 'drizzle'},
-    },
-    {
-      text: 'Kysely',
-      sync: {pgClient: 'kysely'},
-    },
-    {
-      text: 'Prisma',
-      sync: {pgClient: 'prisma'},
-    },
-    {
-      text: 'node-postgres',
-      sync: {pgClient: 'node-postgres'},
-    },
-    {
-      text: 'postgres.js',
-      sync: {pgClient: 'postgres-js'},
-    },
-  ]}
->
+**Drizzle**
 
 ```ts
 // app/api/mutate/db-provider.ts
@@ -65,6 +35,8 @@ declare module '@rocicorp/zero' {
   }
 }
 ```
+
+**Kysely**
 
 ```ts
 // app/api/mutate/db-provider.ts
@@ -98,6 +70,8 @@ declare module '@rocicorp/zero' {
 }
 ```
 
+**Prisma**
+
 ```ts
 // app/api/mutate/db-provider.ts
 import {PrismaPg} from '@prisma/adapter-pg'
@@ -119,6 +93,8 @@ declare module '@rocicorp/zero' {
   }
 }
 ```
+
+**node-postgres**
 
 ```ts
 // app/api/mutate/db-provider.ts
@@ -147,6 +123,8 @@ declare module '@rocicorp/zero' {
 }
 ```
 
+**postgres.js**
+
 ```ts
 // app/api/mutate/db-provider.ts
 import {zeroPostgresJS} from '@rocicorp/zero/server/adapters/postgresjs'
@@ -166,30 +144,7 @@ declare module '@rocicorp/zero' {
 
 Within your mutators, you can access the underlying transaction via `tx.dbTransaction.wrappedTransaction`:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'Drizzle',
-      sync: {pgClient: 'drizzle'},
-    },
-    {
-      text: 'Kysely',
-      sync: {pgClient: 'kysely'},
-    },
-    {
-      text: 'Prisma',
-      sync: {pgClient: 'prisma'},
-    },
-    {
-      text: 'node-postgres',
-      sync: {pgClient: 'node-postgres'},
-    },
-    {
-      text: 'postgres.js',
-      sync: {pgClient: 'postgres-js'},
-    },
-  ]}
->
+**Drizzle**
 
 ```ts
 // mutators.ts
@@ -207,6 +162,8 @@ export const mutators = defineMutators({
 })
 ```
 
+**Kysely**
+
 ```ts
 // mutators.ts
 export const mutators = defineMutators({
@@ -223,6 +180,8 @@ export const mutators = defineMutators({
   )
 })
 ```
+
+**Prisma**
 
 ```ts
 // mutators.ts
@@ -246,6 +205,8 @@ export const mutators = defineMutators({
 })
 ```
 
+**node-postgres**
+
 ```ts
 // mutators.ts
 export const mutators = defineMutators({
@@ -262,6 +223,8 @@ export const mutators = defineMutators({
   )
 })
 ```
+
+**postgres.js**
 
 ```ts
 // mutators.ts
@@ -305,13 +268,7 @@ Zero doesn't yet have the wiring setup in its bindings layers to really nicely s
 
 For now, we don't recommend using Zero with SSR. Use your framework's recommended pattern to prevent SSR execution:
 
-<CodeGroup
-  labels={[
-    {text: 'TanStack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'SolidStart', sync: {api: 'solid'}},
-  ]}
->
+**TanStack Start**
 
 ```tsx
 import {lazy} from 'react'
@@ -325,9 +282,14 @@ const ZeroProvider = lazy(() =>
 
 function Root() {
   return (
+    <ZeroProvider>
+      <App />
+    </ZeroProvider>
   )
 }
 ```
+
+**Next.js**
 
 ```tsx
 // Mark client-only components
@@ -337,9 +299,14 @@ import {ZeroProvider} from '@rocicorp/zero/react'
 
 export default function Root() {
   return (
+    <ZeroProvider>
+      <App />
+    </ZeroProvider>
   )
 }
 ```
+
+**SolidStart**
 
 ```tsx
 import {clientOnly} from '@solidjs/start'
@@ -353,6 +320,11 @@ const ZeroProvider = clientOnly(async () => {
 
 export default function Root() {
   return (
+    <ZeroProvider>
+      <App />
+    </ZeroProvider>
   )
 }
 ```
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

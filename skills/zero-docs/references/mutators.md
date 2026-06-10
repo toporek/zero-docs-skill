@@ -1,5 +1,9 @@
 # Mutators
 
+Writing Data
+
+# Mutators
+
 Mutators are how you write data with Zero. Here's a simple example:
 
 ```ts
@@ -30,10 +34,7 @@ export const mutators = defineMutators({
 
 A copy of each mutator exists on both the client and on your server:
 
-<ImageLightbox
-  src="/images/mutators/overview.png"
-  invert="light"
-/>
+![](https://zero.rocicorp.dev/images/mutators/overview.png)
 
 Often the implementations will be the same, and you can just share their code. This is easy with full-stack frameworks like TanStack Start or Next.js.
 
@@ -43,7 +44,7 @@ But the implementations don't have to be the same, or even compute the same resu
 
 When a mutator is invoked, it initially runs on the client, against the client-side datastore. Any changes are immediately applied to open queries and the user sees the changes.
 
-In the background, Zero sends a _mutation_ (a record of the mutator having run with certain arguments) to your server's push endpoint. Your push endpoint runs the [push protocol](#custom-mutate-implementation), executing the server-side mutator in a transaction against your database and recording the fact that the mutation ran. The `@rocicorp/zero` package contains utilities to make it easy to implement this endpoint in TypeScript.
+In the background, Zero sends a *mutation* (a record of the mutator having run with certain arguments) to your server's push endpoint. Your push endpoint runs the [push protocol](#custom-mutate-implementation), executing the server-side mutator in a transaction against your database and recording the fact that the mutation ran. The `@rocicorp/zero` package contains utilities to make it easy to implement this endpoint in TypeScript.
 
 The changes to the database are then replicated to `zero-cache` using logical replication. `zero-cache` calculates the updates to active queries and sends rows that have changed to each client. It also sends information about the mutations that have been applied to the database.
 
@@ -65,12 +66,7 @@ const myMutator = defineMutator(async () => {
 })
 ```
 
-> **`async` !== slow**
->
-> Mutators almost always complete in the same frame on the
->   client, within milliseconds. The reason they are marked
->   `async` is because on the server, reading from the `tx`
->   object goes over the network to Postgres.
+> 🤔 **`async` !== slow**: Mutators almost always complete in the same frame on the client, within milliseconds. The reason they are marked `async` is because on the server, reading from the `tx`object goes over the network to Postgres.
 
 ### Writing Data
 
@@ -83,14 +79,7 @@ const myMutator = defineMutator(async ({tx}) => {
 })
 ```
 
-> **Always await writes in mutators**
->
-> Mutators almost always run in the same frame on the
->   client, against local data. The reason mutators are marked
->   `async` is because on the server, reading from the `tx`
->   object goes over the network to Postgres. Also, in edge
->   cases on the client, reads and writes can go to local
->   storage (IndexedDB or SQLite).
+> ⚠️ **Always await writes in mutators**: Mutators almost always run in the same frame on the client, against local data. The reason mutators are marked `async` is because on the server, reading from the `tx`object goes over the network to Postgres. Also, in edge cases on the client, reads and writes can go to local storage (IndexedDB or SQLite).
 
 #### Insert
 
@@ -182,7 +171,7 @@ tx.mutate.user.delete({
 
 ### Arguments
 
-The `MutatorFn` can take a single `args` parameter. To enable this, pass a _validator_ to `defineMutator`:
+The `MutatorFn` can take a single `args` parameter. To enable this, pass a *validator* to `defineMutator`:
 
 ```ts
 import {defineMutator} from '@rocicorp/zero'
@@ -203,15 +192,13 @@ const initStats = defineMutator(
 
 We use [Zod](https://zod.dev/) in these examples, but you can use any validation library that implements [Standard Schema](https://standardschema.dev/).
 
-> **Mutators don't have to be pure**
->
-> It's most common for mutators to be a [pure function](https://en.wikipedia.org/wiki/Pure_function) of the database state plus arguments. But it's not *required*.
+> 😈 **Mutators don't have to be pure**: It's most common for mutators to be a [pure function](https://en.wikipedia.org/wiki/Pure_function) of the database state plus arguments. But it's not *required*.
 >
 > Impure mutators can be useful, e.g., to consult some external system on the server for authorization or validation.
 
 ### Reading Data
 
-You can read data within a mutator by passing [ZQL](./zql) to `tx.run`:
+You can read data within a mutator by passing [ZQL](zql.md) to `tx.run`:
 
 ```ts
 const updateIssue = defineMutator(
@@ -237,9 +224,7 @@ You have the full power of ZQL at your disposal, including relationships, filter
 
 Reads and writes within a mutator are transactional, meaning that the datastore is guaranteed to not change while your mutator is running. And if the mutator throws, the entire mutation is rolled back.
 
-> **Reading in mutators is always local**
->
-> Unlike [`zero.run()`](queries#once), there is no `type` parameter that can be used to wait for server results inside mutators.
+> **Reading in mutators is always local**: Unlike [`zero.run()`](queries.md#once), there is no `type` parameter that can be used to wait for server results inside mutators.
 >
 > This is because waiting for server results in mutators makes no sense – it would defeat the purpose of running optimistically to begin with.
 >
@@ -249,7 +234,7 @@ Reads and writes within a mutator are transactional, meaning that the datastore 
 
 Mutator parameters are supplied by the client application and passed to the server automatically by Zero. This makes them unsuitable for credentials, since the user could modify them.
 
-For this reason, Zero mutators also support the concept of a [`context` object](/docs/auth#context).
+For this reason, Zero mutators also support the concept of a [`context` object](auth.md#context).
 
 Access your context with the `ctx` parameter to your mutator:
 
@@ -268,34 +253,9 @@ const createIssue = defineMutator(
 )
 ```
 
-> **Without global `DefaultTypes`**
+> 💡 **Without global `DefaultTypes`**: If you don't want to register your [Context](auth.md#context) and [Schema](schema.md#register-schema-type) types globally, you can use `defineMutatorWithType` and `defineMutatorsWithType`:
 >
-> If you don't want to register your [Context](/docs/auth#context) and [Schema](/docs/schema#register-schema-type) types globally, you can use `defineMutatorWithType` and `defineMutatorsWithType`:
->
-> <CodeGroup
->   labels={[
->     {
->       text: 'Drizzle',
->       sync: {pgClient: 'drizzle'},
->     },
->     {
->       text: 'Kysely',
->       sync: {pgClient: 'kysely'},
->     },
->     {
->       text: 'Prisma',
->       sync: {pgClient: 'prisma'},
->     },
->     {
->       text: 'node-postgres',
->       sync: {pgClient: 'node-postgres'},
->     },
->     {
->       text: 'postgres.js',
->       sync: {pgClient: 'postgres-js'},
->     },
->   ]}
-> >
+> **Drizzle**
 >
 > ```ts
 > import {
@@ -316,6 +276,8 @@ const createIssue = defineMutator(
 > const defineMutators = defineMutatorsWithType<Schema>()
 > ```
 >
+> **Kysely**
+>
 > ```ts
 > import {
 >   defineMutatorWithType,
@@ -334,6 +296,8 @@ const createIssue = defineMutator(
 > >()
 > const defineMutators = defineMutatorsWithType<Schema>()
 > ```
+>
+> **Prisma**
 >
 > ```ts
 > import {
@@ -354,6 +318,8 @@ const createIssue = defineMutator(
 > const defineMutators = defineMutatorsWithType<Schema>()
 > ```
 >
+> **node-postgres**
+>
 > ```ts
 > import {
 >   defineMutatorWithType,
@@ -372,6 +338,8 @@ const createIssue = defineMutator(
 > const defineMutators = defineMutatorsWithType<Schema>()
 > ```
 >
+> **postgres.js**
+>
 > ```ts
 > import {
 >   defineMutatorWithType,
@@ -389,8 +357,6 @@ const createIssue = defineMutator(
 > >()
 > const defineMutators = defineMutatorsWithType<Schema>()
 > ```
->
-> </CodeGroup>
 
 ### Mutator Registries
 
@@ -546,9 +512,7 @@ export const mutators = defineMutators{{
 })
 ```
 
-> **Use `defineMutators` at top level only**
->
-> `defineMutators` establishes the full name for each mutator (i.e., `posts.create`, `users.updateRole`), which is later sent to the [server](#server-setup).
+> ⚠️ **Use `defineMutators` at top level only**: `defineMutators` establishes the full name for each mutator (i.e., `posts.create`, `users.updateRole`), which is later sent to the [server](#server-setup).
 >
 > So this should only be used once at the top level of your `mutators.ts` file.
 
@@ -556,13 +520,7 @@ export const mutators = defineMutators{{
 
 Before you can use your mutators, you need to register them with Zero:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/react'
@@ -575,8 +533,13 @@ const opts: ZeroOptions = {
 }
 
 return (
+  <ZeroProvider {...opts}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**SolidJS**
 
 ```tsx
 import {ZeroProvider} from '@rocicorp/zero/solid'
@@ -589,8 +552,13 @@ const opts: ZeroOptions = {
 }
 
 return (
+  <ZeroProvider {...opts}>
+    <App />
+  </ZeroProvider>
 )
 ```
+
+**TypeScript**
 
 ```ts
 import {Zero} from '@rocicorp/zero'
@@ -605,9 +573,7 @@ const opts: ZeroOptions = {
 const zero = new Zero(opts)
 ```
 
-> **Knowing is half the battle**
->
-> Mutators need to be registered with Zero because Zero calls them during sync for conflict resolution.
+> 🪖 **Knowing is half the battle**: Mutators need to be registered with Zero because Zero calls them during sync for conflict resolution.
 >
 > If you invoke a mutator that is not registered, Zero will throw an error.
 
@@ -617,7 +583,7 @@ In order for mutations to sync, you must provide an implementation of the `mutat
 
 ### Registering the Endpoint
 
-Use [`ZERO_MUTATE_URL`](./zero-cache-config#mutate-url) to tell `zero-cache` where to find your `mutate` implementation:
+Use [`ZERO_MUTATE_URL`](zero-cache-config.md#mutate-url) to tell `zero-cache` where to find your `mutate` implementation:
 
 ```bash
 export ZERO_MUTATE_URL="http://localhost:3000/api/zero/mutate"
@@ -626,16 +592,9 @@ export ZERO_MUTATE_URL="http://localhost:3000/api/zero/mutate"
 
 ### Implementing the Endpoint
 
-You can use the `handleMutateRequest` and `mustGetMutator` functions to implement the endpoint. Plug in whatever `dbProvider` you set up (see [server-zql](server-zql) or the install guide).
+You can use the `handleMutateRequest` and `mustGetMutator` functions to implement the endpoint. Plug in whatever `dbProvider` you set up (see [server-zql](server-zql.md) or the install guide).
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 // src/routes/api/zero/mutate.ts
@@ -670,6 +629,8 @@ export const Route = createFileRoute('/api/zero/mutate')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // app/api/zero/mutate/route.ts
 import {handleMutateRequest} from '@rocicorp/zero/server'
@@ -692,6 +653,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**Solid Start**
 
 ```ts
 // src/routes/api/zero/mutate.ts
@@ -716,6 +679,8 @@ export async function POST(event: APIEvent) {
   return Response.json(result)
 }
 ```
+
+**Hono**
 
 ```ts
 // api/app.ts
@@ -746,11 +711,7 @@ app.post('/api/zero/mutate', async c => {
 })
 ```
 
-> **Using a different bindings library**
->
-> Zero includes several built-in database adapters. You can
->   also easily create your own. See [ZQL on the
->   Server](server-zql) for more information.
+> **Using a different bindings library**: Zero includes several built-in database adapters. You can also easily create your own. See [ZQL on the Server](server-zql.md) for more information.
 
 `handleMutateRequest` accepts a standard `Request` and returns a JSON object which can be serialized and returned by your server framework of choice.
 
@@ -758,12 +719,7 @@ app.post('/api/zero/mutate', async c => {
 
 The `mutator.fn` function is your mutator implementation wrapped in the validator you provided.
 
-> **Add auth if you need it**
->
-> These examples have only public mutators, so they do not
->   pass a context. In authenticated apps, validate auth in
->   the request, derive context from the session, and pass it
->   to the mutate handler. See [Authentication](/docs/auth).
+> 🔐 **Add auth if you need it**: These examples have only public mutators, so they do not pass a context. In authenticated apps, validate auth in the request, derive context from the session, and pass it to the mutate handler. See [Authentication](auth.md).
 
 ### Handling Errors
 
@@ -787,14 +743,7 @@ const result = await handleMutateRequest({
 
 It is also of course possible for the entire push endpoint to return an HTTP error, or to not reply at all:
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 export const Route = createFileRoute('/api/zero/mutate')({
@@ -808,17 +757,23 @@ export const Route = createFileRoute('/api/zero/mutate')({
 })
 ```
 
-```ts
-export async function POST() {
-  throw new Error('zonk') // will trigger resend
-}
-```
+**Next.js**
 
 ```ts
 export async function POST() {
   throw new Error('zonk') // will trigger resend
 }
 ```
+
+**Solid Start**
+
+```ts
+export async function POST() {
+  throw new Error('zonk') // will trigger resend
+}
+```
+
+**Hono**
 
 ```ts
 app.post('/api/zero/mutate', async c => {
@@ -827,7 +782,7 @@ app.post('/api/zero/mutate', async c => {
 })
 ```
 
-If Zero receives any response from the mutate endpoint other than HTTP 200, 401, or 403, it will disconnect and enter the [error state](/docs/connection#error).
+If Zero receives any response from the mutate endpoint other than HTTP 200, 401, or 403, it will disconnect and enter the [error state](connection.md#error).
 
 If Zero receives HTTP 401 or 403, the client will enter the needs auth state and require a manual reconnect. Use `zero.connection.connect()` for cookie auth or `zero.connection.connect({auth: newToken})` for token auth, then Zero will retry all queued mutations.
 
@@ -860,15 +815,15 @@ The strings listed in `ZERO_MUTATE_URL` can also be [`URLPatterns`](https://deve
 export ZERO_MUTATE_URL="https://mybranch-*.preview.myapp.com/mutate"
 ```
 
-For more information, see the [URLPattern section of the Queries docs](/docs/queries#url-patterns). It works the same way for mutations.
+For more information, see the [URLPattern section of the Queries docs](queries.md#url-patterns). It works the same way for mutations.
 
-If you're configuring per-branch preview URLs (for example on Vercel), see [Preview Deployments](/docs/previews) for the complete setup across both query and mutate endpoints.
+If you're configuring per-branch preview URLs (for example on Vercel), see [Preview Deployments](previews.md) for the complete setup across both query and mutate endpoints.
 
 ### Server-Specific Code
 
 To implement server-specific code, just run different mutators in your mutate endpoint. Server authority to the rescue!
 
-`defineMutators` accepts a _baseMutators_ parameter that makes this easy. The returned mutator registry will contain all the mutators from _baseMutators_, plus any new ones you define or override:
+`defineMutators` accepts a *baseMutators* parameter that makes this easy. The returned mutator registry will contain all the mutators from *baseMutators*, plus any new ones you define or override:
 
 ```ts
 // server-mutators.ts
@@ -940,15 +895,7 @@ zero.mutate(
 )
 ```
 
-> **Client-generated random IDs recommended**
->
-> Client-generated random IDs from
->   [crypto.randomUUID()](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID),
->   [uuid](https://www.npmjs.com/package/uuid),
->   [ulid](https://www.npmjs.com/package/ulid), or
->   [nanoid](https://www.npmjs.com/package/nanoid) work much
->   better with sync engines like Zero. See
->   [IDs](/docs/postgres-support#ids) for more details.
+> 🎲 **Client-generated random IDs recommended**: Client-generated random IDs from [crypto.randomUUID()](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID), [uuid](https://www.npmjs.com/package/uuid), [ulid](https://www.npmjs.com/package/ulid), or [nanoid](https://www.npmjs.com/package/nanoid) work much better with sync engines like Zero. See [IDs](postgres-support.md#ids) for more details.
 
 ### Waiting for Results
 
@@ -958,7 +905,7 @@ Optimistic mutations make sense when the common case is that a mutation succeeds
 
 That said there are cases where it is nice to know when a write succeeded on either the client or server.
 
-One example is if you need to read a row directly after writing it. Zero's local writes are very fast (almost always < 1 frame), but because Zero is backed by IndexedDB, writes are still _technically_ asynchronous and reads directly after a write may not return the new data.
+One example is if you need to read a row directly after writing it. Zero's local writes are very fast (almost always \< 1 frame), but because Zero is backed by IndexedDB, writes are still *technically* asynchronous and reads directly after a write may not return the new data.
 
 You can use the `.client` promise in this case to wait for a write to complete on the client side:
 
@@ -1033,17 +980,13 @@ const read2 = await zero.run(
 
 If the client-side mutator fails, the `.server` promise is also rejected with the same error. You don't have to listen to both promises, the server promise covers both cases.
 
-> **Returning data from mutators**
->
-> There is not yet a way to return data from mutators in the
->   success case. [Let us know](https://discord.rocicorp.dev/)
->   if you need this.
+> **Returning data from mutators**: There is not yet a way to return data from mutators in the success case. [Let us know](https://discord.rocicorp.dev/)if you need this.
 
 ## Permissions
 
 Because mutators are just normal TypeScript functions that run server-side, there is no need for a special permissions system. You can implement whatever permission checks you want using plain TypeScript code.
 
-See [Permissions](/docs/auth#permission-patterns) for more information.
+See [Permissions](auth.md#permission-patterns) for more information.
 
 ## Dropping Down to Raw SQL
 
@@ -1075,7 +1018,7 @@ const markAllAsRead = defineMutator(
 )
 ```
 
-See [ZQL on the Server](/docs/server-zql) for more information.
+See [ZQL on the Server](server-zql.md) for more information.
 
 ## Notifications and Async Work
 
@@ -1114,14 +1057,7 @@ export function createMutators(
 
 Then in your mutate handler:
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 export const Route = createFileRoute('/api/zero/mutate')({
@@ -1158,6 +1094,8 @@ export const Route = createFileRoute('/api/zero/mutate')({
 })
 ```
 
+**Next.js**
+
 ```ts
 export async function POST(request: Request) {
   const asyncTasks: Array<() => Promise<void>> = []
@@ -1182,6 +1120,8 @@ export async function POST(request: Request) {
 }
 ```
 
+**Solid Start**
+
 ```ts
 export async function POST(event: APIEvent) {
   const asyncTasks: Array<() => Promise<void>> = []
@@ -1205,6 +1145,8 @@ export async function POST(event: APIEvent) {
   return Response.json(result)
 }
 ```
+
+**Hono**
 
 ```ts
 app.post('/api/zero/mutate', async c => {
@@ -1238,3 +1180,5 @@ app.post('/api/zero/mutate', async c => {
 You can manually implement the mutate endpoint in any programming language.
 
 This will be documented in the future, but you can refer to the [handleMutateRequest](https://github.com/rocicorp/mono/blob/main/packages/zero-server/src/process-mutations.ts) source code for an example for now.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

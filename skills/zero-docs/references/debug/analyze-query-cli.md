@@ -1,14 +1,8 @@
 # Analyze Query CLI
 
-Besides the query analyzer built into the [inspector](/docs/debug/inspector#analyzing-queries), you can also analyze queries from a terminal. This is useful for repeatable debugging, sharing command output, and running analysis from agent workflows.
+Besides the query analyzer built into the [inspector](inspector.md#analyzing-queries), you can also analyze queries from a terminal. This is useful for repeatable debugging, sharing command output, and running analysis from agent workflows.
 
-> **Looking for the old analyze-query command?**
->
-> The standalone `npx analyze-query` CLI has been deprecated
->   and replaced by the `runAnalyzeCLI` function. This new
->   approach makes it easier to wire the analyzer into your
->   app's schema, and also enables analyzing a remote
->   zero-cache.
+> 💡 **Looking for the old analyze-query command?**: The standalone `npx analyze-query` CLI has been deprecated and replaced by the `runAnalyzeCLI` function. This new approach makes it easier to wire the analyzer into your app's schema, and also enables analyzing a remote zero-cache.
 
 ## Set Up
 
@@ -56,7 +50,7 @@ npm run analyze-query -- \
 
 ## Production Use
 
-Production Zero servers require a [`ZERO_ADMIN_PASSWORD`](/docs/zero-cache-config#admin-password). To analyze queries on a production server, pass `--admin-password`:
+Production Zero servers require a [`ZERO_ADMIN_PASSWORD`](../zero-cache-config.md#admin-password). To analyze queries on a production server, pass `--admin-password`:
 
 ```bash
 npm run analyze-query -- \
@@ -126,13 +120,15 @@ SCAN albums
 USE TEMP B-TREE FOR ORDER BY
 ```
 
-This is the same analysis data returned by the [inspector](/docs/debug/inspector#analyzing-queries). See the inspector docs for how to interpret row counts, SQLite plans, and join plans.
+This is the same analysis data returned by the [inspector](inspector.md#analyzing-queries). See the inspector docs for how to interpret row counts, SQLite plans, and join plans.
 
 ## Optional Output
 
 Two flags make the output more verbose:
 
-- `--output-synced-rows` includes the rows that would be synced to the client.
-- `--output-vended-rows` includes the rows read from the replica while executing the query.
+* `--output-synced-rows` includes the rows that would be synced to the client.
+* `--output-vended-rows` includes the rows read from the replica while executing the query.
 
 These are useful when you want to confirm exactly which rows are being read and returned.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

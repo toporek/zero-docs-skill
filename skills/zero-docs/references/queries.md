@@ -1,5 +1,9 @@
 # Queries
 
+Reading and Syncing Data
+
+# Queries
+
 Queries are how you read and sync data with Zero. Here's a simple example:
 
 ```ts
@@ -21,10 +25,7 @@ export const queries = defineQueries({
 
 A copy of each query exists on both the client and on your server:
 
-<ImageLightbox
-  src="/images/custom-queries/queries1.svg"
-  invert="dark"
-/>
+![](https://zero.rocicorp.dev/images/custom-queries/queries1.svg)
 
 Often the implementations will be the same, and you can just share their code. This is easy with full-stack frameworks like TanStack Start or Next.js.
 
@@ -34,29 +35,17 @@ But the implementations don't have to be the same, or even compute the same resu
 
 When a query is invoked, it initially runs on the client, against the client-side datastore. Any matching data is returned immediately and the user sees instant results.
 
-<ImageLightbox
-  src="/images/custom-queries/queries2.svg"
-  caption="Client hydration"
-  invert="dark"
-/>
+![Client hydration](https://zero.rocicorp.dev/images/custom-queries/queries2.svg)
 
 In the background, the name and arguments for the query are sent to zero-cache. Zero-cache calls the `queries` endpoint on your server to get the ZQL for the query. Your server looks up its implementation of the query, invokes it, and returns the resulting ZQL expression to zero-cache.
 
 Zero-cache then runs this ZQL against the server-side data. The initial server result is sent back to the client and the client query updates in response.
 
-<ImageLightbox
-  src="/images/custom-queries/queries4.svg"
-  caption="Server hydration"
-  invert="dark"
-/>
+![Server hydration](https://zero.rocicorp.dev/images/custom-queries/queries4.svg)
 
 zero-cache receives updates from Postgres via logical replication. It updates affected queries and sends row changes back to the client, which updates the client query, and the user sees the changes.
 
-<ImageLightbox
-  src="/images/custom-queries/queries6.svg"
-  caption="Incremental update"
-  invert="dark"
-/>
+![Incremental update](https://zero.rocicorp.dev/images/custom-queries/queries6.svg)
 
 ## Defining Queries
 
@@ -64,7 +53,7 @@ zero-cache receives updates from Postgres via logical replication. It updates af
 
 Create a query using `defineQuery`.
 
-The only required argument is a `QueryFn`, which must return a [ZQL](./zql) expression:
+The only required argument is a `QueryFn`, which must return a [ZQL](zql.md) expression:
 
 ```ts
 import {zql} from 'schema.ts'
@@ -74,7 +63,7 @@ const allPostsQueryDef = defineQuery(() => zql.post)
 
 ### Arguments
 
-The `QueryFn` can take a single `args` parameter. To enable this, pass a _validator_ to `defineQuery`:
+The `QueryFn` can take a single `args` parameter. To enable this, pass a *validator* to `defineQuery`:
 
 ```ts
 import {zql} from 'schema.ts'
@@ -93,9 +82,7 @@ const postsByAuthor = defineQuery(
 
 We use [Zod](https://zod.dev/) in these examples, but you can use any validation library that implements [Standard Schema](https://standardschema.dev/).
 
-> **Why validators are required**
->
-> Zero queries run on both the client and [on your server](#server-setup). In the server case, the parameters come from the client and are untrusted. The validator ensures the data passed to your query is of the expected type.
+> **Why validators are required**: Zero queries run on both the client and [on your server](#server-setup). In the server case, the parameters come from the client and are untrusted. The validator ensures the data passed to your query is of the expected type.
 
 ### Query Registries
 
@@ -141,7 +128,7 @@ console.log(queries.posts.all.queryName)
 
 Query parameters are supplied by the client application and passed to the server automatically by Zero. This makes them unsuitable for credentials, since the user could modify them.
 
-For this reason, Zero queries also support the concept of a [`context` object](/docs/auth#context).
+For this reason, Zero queries also support the concept of a [`context` object](auth.md#context).
 
 Access your context with the `ctx` parameter to your query:
 
@@ -153,9 +140,7 @@ const myPostsQuery = defineQuery(({ctx: {userID}}) => {
 })
 ```
 
-> **Without global DefaultTypes**
->
-> If you don't want to register your [Context](/docs/auth#context) and [Schema](/docs/schema#register-schema-type) types globally, you can use `defineQueryWithType` and `defineQueriesWithType`:
+> 💡 **Without global DefaultTypes**: If you don't want to register your [Context](auth.md#context) and [Schema](schema.md#register-schema-type) types globally, you can use `defineQueryWithType` and `defineQueriesWithType`:
 >
 > ```ts
 > import {
@@ -234,19 +219,15 @@ export const queries = defineQueries({
 })
 ```
 
-> **Use `defineQueries` at top level only**
->
-> Because `defineQueries` establishes the full name for each
->   query (i.e., `posts.get`, `users.byRole`), it should only
->   be used once at the top level of your `queries.ts` file.
+> ⚠️ **Use `defineQueries` at top level only**: Because `defineQueries` establishes the full name for each query (i.e., `posts.get`, `users.byRole`), it should only be used once at the top level of your `queries.ts` file.
 
 ## Server Setup
 
-In order for queries to sync, you must provide an implementation of the `query` endpoint on your server. `zero-cache` calls this endpoint to resolve each query to [ZQL](./zql) that it can run.
+In order for queries to sync, you must provide an implementation of the `query` endpoint on your server. `zero-cache` calls this endpoint to resolve each query to [ZQL](zql.md) that it can run.
 
 ### Registering the Endpoint
 
-Use [`ZERO_QUERY_URL`](./zero-cache-config#query-url) to tell `zero-cache` where to find your `query` implementation:
+Use [`ZERO_QUERY_URL`](zero-cache-config.md#query-url) to tell `zero-cache` where to find your `query` implementation:
 
 ```bash
 export ZERO_QUERY_URL="http://localhost:3000/api/zero/query"
@@ -257,14 +238,7 @@ export ZERO_QUERY_URL="http://localhost:3000/api/zero/query"
 
 You can use the `handleQueryRequest` and `mustGetQuery` functions to implement the endpoint.
 
-<CodeGroup
-  labels={[
-    {text: 'Tanstack Start', sync: {api: 'tanstack'}},
-    {text: 'Next.js', sync: {api: 'nextjs'}},
-    {text: 'Solid Start', sync: {api: 'solid'}},
-    {text: 'Hono', sync: {api: 'hono'}},
-  ]}
->
+**Tanstack Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -295,6 +269,8 @@ export const Route = createFileRoute('/api/zero/query')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // app/api/zero/query/route.ts
 import {handleQueryRequest} from '@rocicorp/zero/server'
@@ -316,6 +292,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**Solid Start**
 
 ```ts
 // src/routes/api/zero/query.ts
@@ -339,6 +317,8 @@ export async function POST(event: APIEvent) {
   return Response.json(result)
 }
 ```
+
+**Hono**
 
 ```ts
 // api/app.ts
@@ -368,12 +348,7 @@ app.post('/api/zero/query', async c => {
 
 The `query.fn` function is your query implementation wrapped in the validator you provided.
 
-> **Add auth if you need it**
->
-> These examples have only public queries, so they do not
->   pass a context. In authenticated apps, validate auth in
->   the request, derive context from the session, and pass it
->   to the query handler. See [Authentication](/docs/auth).
+> 🔐 **Add auth if you need it**: These examples have only public queries, so they do not pass a context. In authenticated apps, validate auth in the request, derive context from the session, and pass it to the query handler. See [Authentication](auth.md).
 
 ### Custom Query URL
 
@@ -405,42 +380,31 @@ ZERO_QUERY_URL="https://mybranch-*.preview.myapp.com/query"
 
 This queries URL will allow clients to choose URLs like:
 
-- `https://mybranch-aaa.preview.myapp.com/query` ✅
-- `https://mybranch-bbb.preview.myapp.com/query` ✅
+* `https://mybranch-aaa.preview.myapp.com/query` ✅
+* `https://mybranch-bbb.preview.myapp.com/query` ✅
 
 But rejects URLs like:
 
-- `https://preview.myapp.com/query` ❌ (missing subdomain)
-- `https://malicious.com/query` ❌ (different domain)
-- `https://mybranch-123.preview.myapp.com/query/extra` ❌ (extra path)
-- `https://mybranch-123.preview.myapp.com/other` ❌ (different path)
+* `https://preview.myapp.com/query` ❌ (missing subdomain)
+* `https://malicious.com/query` ❌ (different domain)
+* `https://mybranch-123.preview.myapp.com/query/extra` ❌ (extra path)
+* `https://mybranch-123.preview.myapp.com/other` ❌ (different path)
 
-> **Pro Tip (tm)**
+> 🥇 **Pro Tip (tm)**: Because URLPattern is a web standard, you can test them right in your browser:
 >
-> Because URLPattern is a web standard, you can test them
->   right in your browser:
->   <img
->     alt="URL Pattern"
->     src="/images/mutators/url-pattern.png"
->   />
+> ![URL Pattern](https://zero.rocicorp.dev/images/mutators/url-pattern.png)
 
 For more information, see the [URLPattern docs](https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API).
 
-If you're configuring per-branch preview URLs (for example on Vercel), see [Preview Deployments](/docs/previews) for the complete setup across both query and mutate endpoints.
+If you're configuring per-branch preview URLs (for example on Vercel), see [Preview Deployments](previews.md) for the complete setup across both query and mutate endpoints.
 
 ## Running Queries
 
 ### Reactively
 
-The most common way to use queries is with the `useQuery` reactive hooks from the [React](react) or [SolidJS](solidjs) bindings (or the equivalent low-level API):
+The most common way to use queries is with the `useQuery` reactive hooks from the [React](react.md) or [SolidJS](solidjs.md) bindings (or the equivalent low-level API):
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 import {useQuery} from '@rocicorp/zero/react'
@@ -454,6 +418,8 @@ function App() {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 import {useQuery} from '@rocicorp/zero/solid'
 import {queries} from 'zero/queries.ts'
@@ -464,10 +430,14 @@ function App() {
   )
 
   return (
+    <For each={posts()}>
       {post => <div key={post.id}>{post.title}</div>}
+    </For>
   )
 }
 ```
+
+**TypeScript**
 
 ```ts
 import {queries} from 'zero/queries.ts'
@@ -495,12 +465,7 @@ Sometimes the inputs needed to construct a query are not available on the first 
 
 Both React and Solid support conditional queries by passing `undefined` until the query can be constructed:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-  ]}
->
+**React**
 
 ```tsx
 import {useQuery} from '@rocicorp/zero/react'
@@ -519,6 +484,8 @@ function Username({userID}: {userID: string | undefined}) {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 import {useQuery} from '@rocicorp/zero/solid'
 import {Show} from 'solid-js'
@@ -534,7 +501,9 @@ function Username(props: {userID: string | undefined}) {
   )
 
   return (
+    <Show when={user()}>
       {user => <div>{user().username}</div>}
+    </Show>
   )
 }
 ```
@@ -583,13 +552,7 @@ Because Zero returns local results immediately and server results asynchronously
 
 If you just use a simple existence check, you will often see the 404 UI flicker while the server result loads:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 const [issue] = useQuery(queries.issues.get('some-id'))
@@ -602,21 +565,28 @@ if (!issue) {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 const [issue] = useQuery(() =>
   queries.issues.get('some-id')
 )
 
 return (
+  <Show when={issue()}>
     {resolved => (
       <Show
         when={resolved}
         fallback={<div>404 Not Found</div>}
       >
         <div>{resolved.title}</div>
+      </Show>
     )}
+  </Show>
 )
 ```
+
+**TypeScript**
 
 ```ts
 const postsView = zero.materialize(
@@ -631,13 +601,7 @@ postsView.addListener(posts => {
 
 To do this correctly, only display the "not found" UI when the result type is `complete`. This way the 404 page is slow but pages with data are still just as fast:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 const [issue, issueResult] = useQuery(
@@ -655,16 +619,26 @@ if (!issue) {
 return <div>{issue.title}</div>
 ```
 
+**SolidJS**
+
 ```tsx
 const [issue, issueResult] = useQuery(() =>
   queries.issues.get('some-id')
 )
 
 return (
+  <Switch fallback={null}>
+    <Match when={issue()}>
       {resolved => <div>{resolved.title}</div>}
+    </Match>
+    <Match when={issueResult().type === 'complete'}>
       <div>404 Not Found</div>
+    </Match>
+  </Switch>
 )
 ```
+
+**TypeScript**
 
 ```ts
 const postsView = zero.materialize(
@@ -684,13 +658,7 @@ Zero immediately returns the data for a query it has on the client, then falls b
 
 Sometimes it's useful to know the difference between these two types of results. To do so, use the `result` from `useQuery`:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 const [issues, issuesResult] = useQuery(
@@ -703,6 +671,8 @@ if (issuesResult.type === 'complete') {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 const [issues, issuesResult] = useQuery(() =>
   queries.issues.inbox()
@@ -713,6 +683,8 @@ if (issuesResult().type === 'complete') {
   console.log('Some data is missing')
 }
 ```
+
+**TypeScript**
 
 ```ts
 const view = zero.materialize(queries.issues.inbox())
@@ -728,19 +700,13 @@ view.addListener((issues, resultType) => {
 
 The possible values of `result.type` are currently `complete` and `unknown`.
 
-The `complete` value is currently only returned when Zero has received the server result. In the future, Zero will be able to return this result type when it _knows_ that all possible data for this query is already available locally. Additionally, we plan to add a `prefix` result for when the data is known to be a prefix of the complete result. See [Consistency](#consistency) for more information.
+The `complete` value is currently only returned when Zero has received the server result. In the future, Zero will be able to return this result type when it *knows* that all possible data for this query is already available locally. Additionally, we plan to add a `prefix` result for when the data is known to be a prefix of the complete result. See [Consistency](#consistency) for more information.
 
 ## Handling Errors
 
 If the queries endpoint throws an application or parse error, `zero-cache` will report it to the client using the `type` and `error` fields on the query details object:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 const [posts, postsResult] = useQuery(
@@ -756,17 +722,25 @@ if (postsResult.type === 'error') {
 }
 ```
 
+**SolidJS**
+
 ```tsx
 const [posts, postsResult] = useQuery(() =>
   queries.posts.byAuthorID('user123')
 )
 
 return (
+  <Switch>
+    <Match when={postsResult().type === 'error'}>
       <div>
         Error loading posts: {postsResult().error.message}
       </div>
+    </Match>
+  </Switch>
 )
 ```
+
+**TypeScript**
 
 ```ts
 // Materialize a view of a query
@@ -781,16 +755,13 @@ postsView.addListener((posts, resultType, error) => {
 })
 ```
 
-> **Query endpoint failures are not shown here**
->
-> See [Connection Status](connection) for how HTTP or
->   network errors from the queries endpoint are handled.
+> 🤔 **Query endpoint failures are not shown here**: See [Connection Status](connection.md) for how HTTP or network errors from the queries endpoint are handled.
 
 ## Granular Updates
 
 You can use the `materialize()` method to create a view that you can listen to for changes.
 
-However, this will only tell you when the view has changed and give you the complete new result. It won't tell you _what_ changed.
+However, this will only tell you when the view has changed and give you the complete new result. It won't tell you *what* changed.
 
 To know what changed, you can create your own custom `View` implementation:
 
@@ -821,14 +792,11 @@ For examples, see the `View` implementations in [`zero-vue`](https://github.com/
 
 ## Query Caching
 
-Queries can be either _active_ or _cached_. An active query is one that is currently being used by the application. Cached queries are not currently in use, but continue syncing in case they are needed again soon.
+Queries can be either *active* or *cached*. An active query is one that is currently being used by the application. Cached queries are not currently in use, but continue syncing in case they are needed again soon.
 
-<ImageLightbox
-  src="/images/reading-data/query-lifecycle.svg"
-  invert="dark"
-/>
+![](https://zero.rocicorp.dev/images/reading-data/query-lifecycle.svg)
 
-Queries are _deactivated_ according to how they were created:
+Queries are *deactivated* according to how they were created:
 
 1. For `useQuery()`, the UI unmounts the component (which calls `destroy()` under the covers).
 2. For `preload()`, the UI calls `cleanup()` on the return value of `preload()`.
@@ -841,30 +809,22 @@ Additionally when a Zero instance closes, all active queries are automatically d
 
 Each query has a `ttl` that controls how long it stays cached.
 
-> **The TTL clock only ticks while Zero is running**
+> 💡 **The TTL clock only ticks while Zero is running**: If the user closes all tabs for your app, Zero stops running and the time that elapses doesn't count toward any TTLs.
 >
-> If the user closes all tabs for your app, Zero stops running and the time that elapses doesn't count toward any TTLs.
->
-> You do not need to account for such time when choosing a TTL – you only need to account for time your app is running _without_ a query.
+> You do not need to account for such time when choosing a TTL – you only need to account for time your app is running *without* a query.
 
 ### TTL Defaults
 
 In most cases, the default TTL should work well:
 
-- `preload()` queries default to `ttl:'none'`, meaning they are not cached at all, and will stop syncing immediately when deactivated. But because `preload()` queries are typically registered at app startup and never shutdown, and [because the ttl clock only ticks while Zero is running](#the-ttl-clock-only-ticks-while-zero-is-running), this means that preload queries never get unregistered.
-- Other queries have a default `ttl` of `5m` (five minutes).
+* `preload()` queries default to `ttl:'none'`, meaning they are not cached at all, and will stop syncing immediately when deactivated. But because `preload()` queries are typically registered at app startup and never shutdown, and [because the ttl clock only ticks while Zero is running](#the-ttl-clock-only-ticks-while-zero-is-running), this means that preload queries never get unregistered.
+* Other queries have a default `ttl` of `5m` (five minutes).
 
 ### Setting Different TTLs
 
 You can override the default TTL with the `ttl` parameter:
 
-<CodeGroup
-  labels={[
-    {text: 'React', sync: {client: 'react'}},
-    {text: 'SolidJS', sync: {client: 'solidjs'}},
-    {text: 'TypeScript', sync: {client: 'typescript'}},
-  ]}
->
+**React**
 
 ```tsx
 const [user] = useQuery(
@@ -878,6 +838,8 @@ zero.preload(queries.posts.byAuthorID('user123'), {
 })
 ```
 
+**SolidJS**
+
 ```tsx
 const [user] = useQuery(
   () => queries.posts.byAuthorID('user123'),
@@ -889,6 +851,8 @@ zero().preload(queries.posts.byAuthorID('user123'), {
   ttl: '5m'
 })
 ```
+
+**TypeScript**
 
 ```ts
 // run()
@@ -925,7 +889,7 @@ Just as in any database, queries consume resources on both the client and server
 
 We do drop this state after we haven't heard from a client for awhile, but this is only a partial improvement. If the client returns, we have to re-run the query to get the latest data.
 
-This means that we do not actually _want_ to keep queries active unless there is a good chance they will be needed again soon.
+This means that we do not actually *want* to keep queries active unless there is a good chance they will be needed again soon.
 
 The default Zero TTL values might initially seem too short, but they are designed to work well with the way Zero's TTL clock works and strike a good balance between keeping queries alive long enough to be useful, while not keeping them alive so long that they consume resources unnecessarily.
 
@@ -937,22 +901,7 @@ Zero doesn't yet have a way to run named queries local-only, but you can run ZQL
 
 For example, to subscribe to a local-only query:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'React',
-      sync: {client: 'react'},
-    },
-    {
-      text: 'SolidJS',
-      sync: {client: 'solidjs'},
-    },
-    {
-      text: 'Typescript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**React**
 
 ```tsx
 // Queries the already synced data for issues,
@@ -962,6 +911,8 @@ const [issues] = useQuery(
 )
 ```
 
+**SolidJS**
+
 ```tsx
 // Queries the already synced data for issues,
 // without syncing more data.
@@ -969,6 +920,8 @@ const [issues] = useQuery(() =>
   zql.issue.orderBy('created', 'desc').limit(10)
 )
 ```
+
+**Typescript**
 
 ```ts
 // Queries the already synced data for issues,
@@ -1033,7 +986,7 @@ Zero always syncs a consistent partial replica of the backend database to the cl
 
 For example, imagine that you have a bug database w/ 10k issues. You preload the first 1k issues sorted by created.
 
-The user then does a query of issues assigned to themselves, sorted by created. Among the 1k issues that were preloaded imagine 100 are found that match the query. Since the data we preloaded is in the same order as this query, we are guaranteed that any local results found will be a _prefix_ of the server results.
+The user then does a query of issues assigned to themselves, sorted by created. Among the 1k issues that were preloaded imagine 100 are found that match the query. Since the data we preloaded is in the same order as this query, we are guaranteed that any local results found will be a *prefix* of the server results.
 
 The UX that result is nice: the user will see initial results to the query instantly. If more results are found server-side, those results are guaranteed to sort below the local results. There's no shuffling of results when the server response comes in.
 
@@ -1041,8 +994,8 @@ Now imagine that the user switches the sort to ‘sort by modified’. This new 
 
 To avoid this annoying effect, what you should do in this example is also preload the first 1k issues sorted by modified desc. In general for any query shape you intend to do, you should preload the first `n` results for that query shape with no filters, in each sort you intend to use.
 
-> **Zero does not sync duplicate rows**
->
-> Zero syncs the *union* of all active queries' results. You don't have to worry about syncing many sorts of the same query when it's likely the results will overlap heavily.
+> **Zero does not sync duplicate rows**: Zero syncs the *union* of all active queries' results. You don't have to worry about syncing many sorts of the same query when it's likely the results will overlap heavily.
 
 In the future, we will be implementing a consistency model that fixes these issues automatically. We will prevent Zero from returning local data when that data is not known to be a prefix of the server result. Once the consistency model is implemented, preloading can be thought of as purely a performance thing, and not required to avoid unsightly flickering.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

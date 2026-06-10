@@ -4,49 +4,39 @@ To self-host Zero, you will need to deploy zero-cache, a Postgres database, your
 
 Zero-cache is made up of two main components:
 
-1. One or more _view-syncers_: serving client queries using a SQLite replica.
-2. One _replication-manager_: bridge between the Postgres replication stream and view-syncers.
+1. One or more *view-syncers*: serving client queries using a SQLite replica.
+2. One *replication-manager*: bridge between the Postgres replication stream and view-syncers.
 
 These components have the following characteristics:
 
-|                       | Replication Manager         | View Syncer          |
-| --------------------- | --------------------------- | -------------------- |
-| Owns replication slot | ✅                          | ❌                   |
-| Serves client queries | ❌                          | ✅                   |
-| Backs up replica      | ✅ (required in multi-node) | ❌                   |
-| Restores from backup  | Optional                    | Required             |
-| Subscribes to changes | N/A (produces)              | ✅                   |
-| CVR management        | ❌                          | ✅                   |
-| Number deployed       | 1                           | N (horizontal scale) |
+|                       | Replication Manager        | View Syncer          |
+| --------------------- | -------------------------- | -------------------- |
+| Owns replication slot | ✅                          | ❌                    |
+| Serves client queries | ❌                          | ✅                    |
+| Backs up replica      | ✅ (required in multi-node) | ❌                    |
+| Restores from backup  | Optional                   | Required             |
+| Subscribes to changes | N/A (produces)             | ✅                    |
+| CVR management        | ❌                          | ✅                    |
+| Number deployed       | 1                          | N (horizontal scale) |
 
-You will also need to deploy a Postgres database, your frontend, and your API server for the [query](/docs/queries#server-setup) and [mutate](/docs/mutators#server-setup) endpoints.
+You will also need to deploy a Postgres database, your frontend, and your API server for the [query](queries.md#server-setup) and [mutate](mutators.md#server-setup) endpoints.
 
-Before setting up Postgres, read [Connecting to Postgres](/docs/connecting-to-postgres) for provider-specific notes.
+Before setting up Postgres, read [Connecting to Postgres](connecting-to-postgres.md) for provider-specific notes.
 
 ## Minimum Viable Strategy
 
 The simplest way to deploy Zero is to run everything on a single node. This is the least expensive way to run Zero, and it can take you surprisingly far.
 
-<ImageLightbox
-  src="/images/deployment/single-node.svg"
-  invert="light"
-/>
+![](https://zero.rocicorp.dev/images/deployment/single-node.svg)
 
 Here are equivalent single-node configurations for a few common deployment targets:
 
-<CodeGroup
-  labels={[
-    {text: 'Docker Compose', sync: {deploy: 'docker-compose'}},
-    {text: 'Fly.io', sync: {deploy: 'fly'}},
-    {text: 'SST', sync: {deploy: 'sst'}},
-    {text: 'Kubernetes', sync: {deploy: 'kubernetes'}},
-  ]}
->
+**Docker Compose**
 
 ```yaml
 services:
   zero-cache:
-    image: rocicorp/zero:{version}
+    image: rocicorp/zero:1.6.1
     ports:
       - 4848:4848
     stop_grace_period: 10m
@@ -88,13 +78,15 @@ services:
       interval: 10s
 ```
 
+**Fly.io**
+
 ```toml
 app = "zero-cache"
 primary_region = "iad"
 kill_timeout = 300
 
 [build]
-  image = "rocicorp/zero:{version}"
+  image = "rocicorp/zero:1.6.1"
 
 [http_service]
   internal_port = 4848
@@ -124,6 +116,8 @@ kill_timeout = 300
   ZERO_REPLICA_FILE = "/data/replica.db"
 ```
 
+**SST**
+
 ```ts
 /// <reference path="./.sst/platform/config.d.ts" />
 
@@ -145,7 +139,7 @@ export default $config({
 
     new sst.aws.Service('ZeroCache', {
       cluster,
-      image: 'rocicorp/zero:{version}',
+      image: 'rocicorp/zero:1.6.1',
       cpu: '1 vCPU',
       memory: '2 GB',
       volumes: [{efs, path: '/data'}],
@@ -195,6 +189,8 @@ export default $config({
 })
 ```
 
+**Kubernetes**
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -213,7 +209,7 @@ spec:
       terminationGracePeriodSeconds: 600
       containers:
         - name: zero-cache
-          image: rocicorp/zero:{version}
+          image: rocicorp/zero:1.6.1
           ports:
             - name: http
               containerPort: 4848
@@ -279,26 +275,16 @@ These snippets only show the zero-cache side of the deployment. The API behind `
 
 Once you reach the limits of the single-node deployment, you can split zero-cache into a multi-node topology. This is more expensive to run, but it gives you more flexibility and scalability.
 
-<ImageLightbox
-  src="/images/deployment/multi-node.svg"
-  invert="light"
-/>
+![](https://zero.rocicorp.dev/images/deployment/multi-node.svg)
 
 Here are equivalent multi-node configurations for the same topology on a few common deployment targets:
 
-<CodeGroup
-  labels={[
-    {text: 'Docker Compose', sync: {deploy: 'docker-compose'}},
-    {text: 'Fly.io', sync: {deploy: 'fly'}},
-    {text: 'SST', sync: {deploy: 'sst'}},
-    {text: 'Kubernetes', sync: {deploy: 'kubernetes'}},
-  ]}
->
+**Docker Compose**
 
 ```yaml
 services:
   replication-manager:
-    image: rocicorp/zero:{version}
+    image: rocicorp/zero:1.6.1
     # Do not expose the RM to the public internet - only view-syncers
     expose:
       - 4849
@@ -322,7 +308,7 @@ services:
       start_period: 10m
 
   view-syncer:
-    image: rocicorp/zero:{version}
+    image: rocicorp/zero:1.6.1
     ports:
       - 4848:4848
     stop_grace_period: 10m
@@ -359,6 +345,8 @@ services:
       interval: 10s
 ```
 
+**Fly.io**
+
 ```toml
 # replication-manager/fly.toml
 app = "zero-replication-manager"
@@ -366,7 +354,7 @@ primary_region = "iad"
 kill_timeout = 300
 
 [build]
-  image = "rocicorp/zero:{version}"
+  image = "rocicorp/zero:1.6.1"
 
 # Do not add [http_service] or [[services]] to this app. The
 # replication-manager serves Zero's internal replication protocol and should
@@ -403,7 +391,7 @@ primary_region = "iad"
 kill_timeout = 300
 
 [build]
-  image = "rocicorp/zero:{version}"
+  image = "rocicorp/zero:1.6.1"
 
 # If you run more than one view-syncer on Fly, add sticky routing
 # (for example Fly Replay / replay_cache) so clients stay on one machine.
@@ -437,6 +425,8 @@ kill_timeout = 300
   ZERO_REPLICA_FILE = "/data/replica.db"
   ZERO_CHANGE_STREAMER_URI = "ws://zero-replication-manager.internal:4849/"
 ```
+
+**SST**
 
 ```ts
 /// <reference path="./.sst/platform/config.d.ts" />
@@ -472,7 +462,7 @@ export default $config({
       'ReplicationManager',
       {
         cluster,
-        image: 'rocicorp/zero:{version}',
+        image: 'rocicorp/zero:1.6.1',
         cpu: '1 vCPU',
         memory: '2 GB',
         environment: {
@@ -513,7 +503,7 @@ export default $config({
       'ViewSyncer',
       {
         cluster,
-        image: 'rocicorp/zero:{version}',
+        image: 'rocicorp/zero:1.6.1',
         cpu: '2 vCPU',
         memory: '4 GB',
         environment: {
@@ -563,6 +553,8 @@ export default $config({
 })
 ```
 
+**Kubernetes**
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -581,7 +573,7 @@ spec:
       terminationGracePeriodSeconds: 600
       containers:
         - name: replication-manager
-          image: rocicorp/zero:{version}
+          image: rocicorp/zero:1.6.1
           ports:
             - name: http
               containerPort: 4849
@@ -653,7 +645,7 @@ spec:
       terminationGracePeriodSeconds: 600
       containers:
         - name: view-syncer
-          image: rocicorp/zero:{version}
+          image: rocicorp/zero:1.6.1
           ports:
             - name: http
               containerPort: 4848
@@ -722,22 +714,17 @@ In multi-node deployments, keep `ZERO_LITESTREAM_BACKUP_URL` on the `replication
 
 The view-syncers in the multi-node topology can be horizontally scaled as needed.
 
-If restores or initial syncs take a while, configure your orchestrator to allow a startup grace period before treating startup checks as a failure. Ten minutes is a good default for most apps.
-For example, Docker Compose uses `healthcheck.start_period`, Fly.io uses `grace_period`, and ECS services can use `healthCheckGracePeriodSeconds`. Increase it if replica restore or initial sync routinely takes longer.
+If restores or initial syncs take a while, configure your orchestrator to allow a startup grace period before treating startup checks as a failure. Ten minutes is a good default for most apps. For example, Docker Compose uses `healthcheck.start_period`, Fly.io uses `grace_period`, and ECS services can use `healthCheckGracePeriodSeconds`. Increase it if replica restore or initial sync routinely takes longer.
 
 Likewise, during deploys, give `zero-cache`, `replication-manager`, and `view-syncer` a generous shutdown grace period so they can finish cleanup and drain websocket connections.
 
 ## Replica Lifecycle
 
-Zero-cache is backed by a SQLite replica of your database. The SQLite replica
-uses upstream Postgres as the source of truth. If the replica is missing or a
-litestream restore fails, the replication-manager will resync the replica from
-upstream on the next start.
+Zero-cache is backed by a SQLite replica of your database. The SQLite replica uses upstream Postgres as the source of truth. If the replica is missing or a litestream restore fails, the replication-manager will resync the replica from upstream on the next start.
 
 ## Performance
 
-You want to optimize disk IOPS for the serving replica, since this is the file that is read by the view-syncers to run IVM-based queries, and one of the main bottlenecks for query hydration performance.
-View syncer's IVM is "hydrate once, then incrementally push diffs" against the ZQL pipeline, so performance is mostly about:
+You want to optimize disk IOPS for the serving replica, since this is the file that is read by the view-syncers to run IVM-based queries, and one of the main bottlenecks for query hydration performance. View syncer's IVM is "hydrate once, then incrementally push diffs" against the ZQL pipeline, so performance is mostly about:
 
 1. How fast the server can materialize a subscription the first time (hydration).
 2. How fast it can keep it up to date (IVM advancement).
@@ -746,37 +733,34 @@ Different bottlenecks dominate each phase.
 
 ### Hydration
 
-- **SQLite read cost**: hydration is essentially "run the query against the replica and stream all matching rows into the pipeline", so it's bounded by [SQLite scan/index performance](/docs/debug/inspector#analyzing-queries) + result size.
-- **Churn / TTL eviction**: if queries get [evicted](/docs/queries#query-caching) (inactive long enough) and then get re-requested, you pay hydration again.
-- **Custom query transform latency**: the HTTP request from zero-cache to your API at [`ZERO_QUERY_URL`](/docs/zero-cache-config#query-url) does transform/authorization for queries, adding network + CPU before hydration starts.
+* **SQLite read cost**: hydration is essentially "run the query against the replica and stream all matching rows into the pipeline", so it's bounded by [SQLite scan/index performance](debug/inspector.md#analyzing-queries) + result size.
+* **Churn / TTL eviction**: if queries get [evicted](queries.md#query-caching) (inactive long enough) and then get re-requested, you pay hydration again.
+* **Custom query transform latency**: the HTTP request from zero-cache to your API at [`ZERO_QUERY_URL`](zero-cache-config.md#query-url) does transform/authorization for queries, adding network + CPU before hydration starts.
 
 ### IVM advancement
 
-- **Replication throughput**: the view-syncer can only advance when the replicator commits and emits version-ready. If upstream replication is behind, query advancement is capped by how fast the replica advances.
-- **Change volume per transaction**: advancement cost scales with number of changed _rows_, not number of queries.
-- **Circuit breaker behavior**: if advancement looks like it'll take longer than rehydrating, zero-cache intentionally aborts and resets pipelines (which trades "slow incremental" for "rehydrate").
+* **Replication throughput**: the view-syncer can only advance when the replicator commits and emits version-ready. If upstream replication is behind, query advancement is capped by how fast the replica advances.
+* **Change volume per transaction**: advancement cost scales with number of changed *rows*, not number of queries.
+* **Circuit breaker behavior**: if advancement looks like it'll take longer than rehydrating, zero-cache intentionally aborts and resets pipelines (which trades "slow incremental" for "rehydrate").
 
 ### System-level
 
-- **Number of client groups per sync worker**: each client group has its own pipelines; CPU and memory per group limits how many can be "fast" at once. Since Node is single-threaded, one client group can technically starve other groups. This is handled with time slicing and can be configured with the yield parameters, e.g. [`ZERO_YIELD_THRESHOLD_MS`](/docs/zero-cache-config#yield-threshold-ms).
-- **SQLite concurrency limits**: it's designed here for one writer (replicator) + many concurrent readers (view-syncer snapshots). It scales, but very heavy read workloads can still contend on cache/IO.
-- **Network to clients**: even if IVM is fast, it can take time to send data over websocket. This can be improved by using CDNs (like CloudFront) that improve routing.
-- **Network between services**: for a single-region deployment, all services should be colocated.
+* **Number of client groups per sync worker**: each client group has its own pipelines; CPU and memory per group limits how many can be "fast" at once. Since Node is single-threaded, one client group can technically starve other groups. This is handled with time slicing and can be configured with the yield parameters, e.g. [`ZERO_YIELD_THRESHOLD_MS`](zero-cache-config.md#yield-threshold-ms).
+* **SQLite concurrency limits**: it's designed here for one writer (replicator) + many concurrent readers (view-syncer snapshots). It scales, but very heavy read workloads can still contend on cache/IO.
+* **Network to clients**: even if IVM is fast, it can take time to send data over websocket. This can be improved by using CDNs (like CloudFront) that improve routing.
+* **Network between services**: for a single-region deployment, all services should be colocated.
 
 ## Networking
 
 View syncers must be publicly reachable by clients on port 4848. The replication-manager must only be reachable by view-syncers over your private network on port 4849.
 
-> **Do not expose replication-manager to the internet**
->
-> The replication-manager serves Zero's internal replication protocol. Keep it behind private networking such as a private service address, internal load balancer, or Kubernetes `ClusterIP` service.
+> **Do not expose replication-manager to the internet**: The replication-manager serves Zero's internal replication protocol. Keep it behind private networking such as a private service address, internal load balancer, or Kubernetes `ClusterIP` service.
 
 The external load balancer for view-syncers must support websockets, and can use the health check at `/keepalive` to verify view-syncers are healthy. The replication-manager should also have a `/keepalive` health check, but that check should run through private infrastructure rather than a public load balancer.
 
 ### Sticky Sessions
 
-View syncers are designed to be disposable, but since they keep hydrated query pipelines in memory, it's important to try to keep clients connected to the same instance.
-If a reconnect/refresh lands on a different instance, that instance usually has to rehydrate instead of reusing warm state.
+View syncers are designed to be disposable, but since they keep hydrated query pipelines in memory, it's important to try to keep clients connected to the same instance. If a reconnect/refresh lands on a different instance, that instance usually has to rehydrate instead of reusing warm state.
 
 If you are seeing a lot of Rehome errors, you may need to enable sticky sessions. Two instances can end up doing redundant hydration/advancement work for the same `clientGroupID`, and the "loser" will eventually force clients to reconnect.
 
@@ -790,9 +774,7 @@ Zero supports zero-downtime updates by rolling out changes in the following orde
 4. Update client(s).
 5. After most clients have refreshed, run contract migrations to drop or rename obsolete columns/tables.
 
-> **Separate Zero changes from schema changes**
->
-> Rolling out Zero version changes and [schema changes](/docs/schema#schema-changes) together is complicated because both require specific ordering, and the ordering depends on the type of schema change.
+> 💡 **Separate Zero changes from schema changes**: Rolling out Zero version changes and [schema changes](schema.md#schema-changes) together is complicated because both require specific ordering, and the ordering depends on the type of schema change.
 >
 > For this reason, we recommend separating the two types of changes into different PRs and deployments.
 
@@ -802,17 +784,19 @@ Servers are compatible with any client of same major version, and with clients o
 
 For example, server `2.2.0` is compatible with:
 
-- Client `2.3.0` (same major version)
-- Client `2.1.0` (same major version)
-- Client `1.0.0` (previous major version)
+* Client `2.3.0` (same major version)
+* Client `2.1.0` (same major version)
+* Client `1.0.0` (previous major version)
 
 But server `2.2.0` is **not** compatible with:
 
-- Client `3.0.0` (next major version)
-- Client `0.1.0` (two major versions back)
+* Client `3.0.0` (next major version)
+* Client `0.1.0` (two major versions back)
 
 To upgrade Zero to a new major version, first deploy the new zero-cache, then the new frontend.
 
 ### Configuration
 
-The zero-cache image is configured via environment variables. See [zero-cache Config](/docs/zero-cache-config) for available options.
+The zero-cache image is configured via environment variables. See [zero-cache Config](zero-cache-config.md) for available options.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

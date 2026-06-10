@@ -33,6 +33,8 @@ export default function Root() {
         mutators
       }}
     >
+      <App />
+    </ZeroProvider>
   )
 }
 ```
@@ -48,6 +50,9 @@ You can also pass a `Zero` instance to the `ZeroProvider` if you want to control
 ```tsx
 // ZeroProvider just sets up the context, it doesn't manage
 // the lifecycle of the Zero instance.
+<ZeroProvider zero={zero}>
+  <App />
+</ZeroProvider>
 ```
 
 When you pass `zero={zero}`, `ZeroProvider` only provides React Context. It does not manage auth updates for that instance, so if you are using token auth, call `zero.connection.connect({auth: newToken})` yourself or recreate the instance when the user changes.
@@ -77,7 +82,7 @@ function Posts() {
 }
 ```
 
-For conditional queries, such as queries that depend on auth state or route params that may not be loaded yet, see [Conditional Queries](/docs/queries#conditionally).
+For conditional queries, such as queries that depend on auth state or route params that may not be loaded yet, see [Conditional Queries](queries.md#conditionally).
 
 Use `useZero` to get access to the `Zero` instance, for example to run mutators:
 
@@ -110,4 +115,6 @@ Use the `suspendUntil` parameter to control how long to suspend for. The value `
 
 ## Examples
 
-See [the sample directory](/docs/samples) for more complete React examples.
+See [the sample directory](samples.md) for more complete React examples.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

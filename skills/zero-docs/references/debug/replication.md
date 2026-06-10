@@ -4,8 +4,8 @@
 
 During development we all do strange things (unsafely changing schemas, removing files, etc.). If the replica ever gets wedged (stops replicating, acts strange) you can wipe it and start over.
 
-- If you copied your setup from `hello-zero` or `hello-zero-solid`, you can also run `npm run dev:clean`
-- Otherwise you can run `rm zero.db*` to clear the contents of the replica.
+* If you copied your setup from `hello-zero` or `hello-zero-solid`, you can also run `npm run dev:clean`
+* Otherwise you can run `rm zero.db*` to clear the contents of the replica.
 
 It is always safe to wipe the replica. Wiping will have no impact on your upstream database. Downstream zero-clients will get re-synced when they connect.
 
@@ -17,9 +17,7 @@ For data to be synced to the client it must first be replicated to `zero-cache`.
 npx @rocicorp/zero-sqlite3 ./zero.db
 ```
 
-> **Zero uses the bedrock version of SQLite**
->
-> Zero uses a different version of SQLite that runs in WAL2 mode, which means the database files cannot be opened with standard SQLite tools.
+> 💡 **Zero uses the bedrock version of SQLite**: Zero uses a different version of SQLite that runs in WAL2 mode, which means the database files cannot be opened with standard SQLite tools.
 >
 > To inspect your Zero database, you have two options:
 >
@@ -48,3 +46,5 @@ sqlite> SELECT * FROM label;
 ## Miscellaneous
 
 If you see `FATAL:  sorry, too many clients already` in logs, it’s because you have two zero-cache instances running against dev. One is probably in a background tab somewhere. In production, `zero-cache` can run horizontally scaled but on dev it doesn’t run in the config that allows that.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

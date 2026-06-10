@@ -32,6 +32,8 @@ function Root() {
         mutators
       }}
     >
+      <App />
+    </ZeroProvider>
   )
 }
 ```
@@ -47,6 +49,9 @@ You can also pass a `Zero` instance to the `ZeroProvider` if you want to control
 ```tsx
 // ZeroProvider just sets up the context, it doesn't manage
 // the lifecycle of the Zero instance.
+<ZeroProvider zero={zero}>
+  <App />
+</ZeroProvider>
 ```
 
 When you pass `zero={zero}`, `ZeroProvider` only provides SolidJS Context. It does not manage auth updates for that instance, so if you are using token auth, call `zero.connection.connect({auth: newToken})` yourself or recreate the instance when the user changes.
@@ -65,11 +70,13 @@ function App() {
   )
 
   return (
+    <For each={posts()}>
       {post => (
         <div key={post.id}>
           {post.title} - ({post.comments.length} comments)
         </div>
       )}
+    </For>
   )
 }
 ```
@@ -95,4 +102,6 @@ function CompleteButton({issueID}: {issueID: string}) {
 
 See the complete quickstart here:
 
-https://github.com/rocicorp/hello-zero-solid
+[https://github.com/rocicorp/hello-zero-solid](https://github.com/rocicorp/hello-zero-solid)
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

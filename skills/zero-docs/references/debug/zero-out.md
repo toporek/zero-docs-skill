@@ -6,4 +6,6 @@ Run the `zero-out` tool to completely remove all traces of Zero from your Postgr
 npx zero-out
 ```
 
-`zero-out` reads the same [config](/docs/zero-cache-config) as `zero-cache` does, so you can just run it where you run `zero-cache`.
+`zero-out` reads the same [config](../zero-cache-config.md) as `zero-cache` does, so you can just run it where you run `zero-cache`.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

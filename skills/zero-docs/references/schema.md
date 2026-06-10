@@ -1,6 +1,6 @@
 # Zero Schema
 
-Zero applications have both a _database schema_ (the normal backend schema all web apps have) and a _Zero schema_.
+Zero applications have both a *database schema* (the normal backend schema all web apps have) and a *Zero schema*.
 
 The Zero schema is conventionally located in `schema.ts` in your app's source code. The Zero schema serves two purposes:
 
@@ -13,38 +13,39 @@ The Zero schema is usually generated from your backend schema, but can be define
 
 If you use Drizzle or Prisma ORM, you can generate `schema.ts` with [`drizzle-zero`](https://www.npmjs.com/package/drizzle-zero) or [`prisma-zero`](https://www.npmjs.com/package/prisma-zero):
 
-<CodeGroup
-  labels={[
-    {
-      text: 'Drizzle',
-      sync: {orm: 'drizzle', pgClient: 'drizzle'},
-    },
-    {
-      text: 'Prisma',
-      sync: {orm: 'prisma', pgClient: 'prisma'},
-    }, 
-  ]}
->
+**Drizzle**
+
+**npm**
 
 ```bash
 npm install -D drizzle-zero
 npx drizzle-zero generate
 ```
 
+**pnpm**
+
 ```bash
 pnpm add -D drizzle-zero
 pnpm exec drizzle-zero generate
 ```
+
+**bun**
 
 ```bash
 bun add -D drizzle-zero
 bunx drizzle-zero generate
 ```
 
+**yarn**
+
 ```bash
 yarn add -D drizzle-zero
 yarn exec drizzle-zero generate
 ```
+
+**Prisma**
+
+**npm**
 
 ```bash
 npm install -D prisma-zero
@@ -55,6 +56,8 @@ npm install -D prisma-zero
 npx prisma generate
 ```
 
+**pnpm**
+
 ```bash
 pnpm add -D prisma-zero
 # Add this to your prisma schema:
@@ -63,6 +66,8 @@ pnpm add -D prisma-zero
 # }
 pnpx prisma generate
 ```
+
+**bun**
 
 ```bash
 bun add -D prisma-zero
@@ -73,6 +78,8 @@ bun add -D prisma-zero
 bunx prisma generate
 ```
 
+**yarn**
+
 ```bash
 yarn add -D prisma-zero
 # Add this to your prisma schema:
@@ -82,13 +89,7 @@ yarn add -D prisma-zero
 yarn prisma generate
 ```
 
-> **Not seeing your generator?**
->
-> We'd love more! See the source for
->   [drizzle-zero](https://github.com/rocicorp/drizzle-zero)
->   and [prisma-zero](https://github.com/rocicorp/prisma-zero)
->   as a guide, or reach out on
->   [Discord](https://discord.rocicorp.dev/) with questions.
+> 🧑‍💻 **Not seeing your generator?**: We'd love more! See the source for [drizzle-zero](https://github.com/rocicorp/drizzle-zero)and [prisma-zero](https://github.com/rocicorp/prisma-zero)as a guide, or reach out on [Discord](https://discord.rocicorp.dev/) with questions.
 
 ## Writing by Hand
 
@@ -110,7 +111,7 @@ const user = table('user')
   .primaryKey('id')
 ```
 
-Column types are defined with the `boolean()`, `number()`, `string()`, `json()`, and `enumeration()` helpers. See [Column Types](/docs/postgres-support#column-types) for how database types are mapped to these types.
+Column types are defined with the `boolean()`, `number()`, `string()`, `json()`, and `enumeration()` helpers. See [Column Types](postgres-support.md#column-types) for how database types are mapped to these types.
 
 #### Name Mapping
 
@@ -138,7 +139,7 @@ const event = table('event').from('analytics.event')
 
 #### Optional Columns
 
-Columns can be marked _optional_. This corresponds to the SQL concept `nullable`.
+Columns can be marked *optional*. This corresponds to the SQL concept `nullable`.
 
 ```tsx
 const user = table('user')
@@ -150,19 +151,17 @@ const user = table('user')
   .primaryKey('id')
 ```
 
-An optional column can store a value of the specified type or `null` to mean _no value_.
+An optional column can store a value of the specified type or `null` to mean *no value*.
 
-> **Null and undefined**
+> **Null and undefined**: Note that `null` and `undefined` mean different things when working with Zero rows.
 >
-> Note that `null` and `undefined` mean different things when working with Zero rows.
->
->     - When reading, if a column is `optional`, Zero can return `null` for that field. `undefined` is not used at all when Reading from Zero.
->     - When writing, you can specify `null` for an optional field to explicitly write `null` to the datastore, unsetting any previous value.
->     - For `create` and `upsert` you can set optional fields to `undefined` (or leave the field off completely) to take the default value as specified by backend schema for that column. For `update` you can set any non-PK field to `undefined` to leave the previous value unmodified.
+> * When reading, if a column is `optional`, Zero can return `null` for that field. `undefined` is not used at all when Reading from Zero.
+> * When writing, you can specify `null` for an optional field to explicitly write `null` to the datastore, unsetting any previous value.
+> * For `create` and `upsert` you can set optional fields to `undefined` (or leave the field off completely) to take the default value as specified by backend schema for that column. For `update` you can set any non-PK field to `undefined` to leave the previous value unmodified.
 
 #### Enumerations
 
-Use the `enumeration` helper to define a column that can only take on a specific set of values. This is most often used alongside an [`enum` Postgres column type](/docs/postgres-support#column-types).
+Use the `enumeration` helper to define a column that can only take on a specific set of values. This is most often used alongside an [`enum` Postgres column type](postgres-support.md#column-types).
 
 ```tsx
 import {table, string, enumeration} from '@rocicorp/zero'
@@ -228,7 +227,7 @@ const messageRelationships = relationships(
 )
 ```
 
-This creates "sender" and "replies" relationships that can later be queried with the [`related` ZQL clause](/docs/zql#relationships):
+This creates "sender" and "replies" relationships that can later be queried with the [`related` ZQL clause](zql.md#relationships):
 
 ```ts
 const messagesWithSenderAndReplies = z.query.messages
@@ -262,9 +261,7 @@ const issueRelationships = relationships(
 )
 ```
 
-> **Only two levels of chaining are supported**
->
-> See https://bugs.rocicorp.dev/issue/3454.
+> **Only two levels of chaining are supported**: See [https://bugs.rocicorp.dev/issue/3454](https://bugs.rocicorp.dev/issue/3454).
 
 #### Compound Keys Relationships
 
@@ -339,9 +336,9 @@ Zero applications have three components that interact with the database schema: 
 
 During development, you can make changes to all three components in any order:
 
-- Change the Postgres schema
-- Update the API server to use the new schema
-- Update client code to use the new schema
+* Change the Postgres schema
+* Update the API server to use the new schema
+* Update client code to use the new schema
 
 If the Zero client ever detects that its schema is incompatible with the server, it disconnects and fires the [`onUpdateNeeded` event](#handling-old-clients). If the API server ever detects that it has an incompatible schema, it will fail with an error. Simply reloading the app fixes both issues.
 
@@ -349,45 +346,33 @@ If the Zero client ever detects that its schema is incompatible with the server,
 
 Zero also supports downtime-free schema changes for use in production. To achieve this, the order you deploy in matters:
 
-- **Expand** (adding things): Deploy providers before consumers. DB → API → Client.
-- **Contract** (removing things): Deploy consumers before providers. Client → API → DB.
+* **Expand** (adding things): Deploy providers before consumers. DB → API → Client.
+* **Contract** (removing things): Deploy consumers before providers. Client → API → DB.
 
-> **Test on staging first**
->
-> For production apps, we strongly recommend testing schema
->   changes on a staging environment that has a
->   production-like dataset before deploying to production.
+> **Test on staging first**: For production apps, we strongly recommend testing schema changes on a staging environment that has a production-like dataset before deploying to production.
 
 ### Expand Changes
 
 When you're adding a column, table, or new mutator/query:
 
 1. Deploy the database change and wait for it to replicate through `zero-cache`.
-   - In Cloud Zero, you can see replication status in the dashboard.
-   - In self-hosted `zero-cache`, check the logs.
-   - If there's [backfill](#backfill), wait for that to complete.
+   * In Cloud Zero, you can see replication status in the dashboard.
+   * In self-hosted `zero-cache`, check the logs.
+   * If there's [backfill](#backfill), wait for that to complete.
 2. Deploy the API server.
 3. Deploy the client.
 
-> **Custom publications + Supabase**
->
-> If you use a [custom
->   publication](postgres-support#limiting-replication) with
->   Supabase, you need to [manually notify
->   `zero-cache`](connecting-to-postgres#publication-changes)
->   of changes to your publication.
+> **Custom publications + Supabase**: If you use a [custom publication](postgres-support.md#limiting-replication) with Supabase, you need to [manually notify`zero-cache`](connecting-to-postgres.md#publication-changes)of changes to your publication.
 
 For full-stack frameworks where the API and client deploy together, steps 2 and 3 are combined.
 
 If your change doesn't affect the Postgres schema (for example, just adding a mutator that uses existing columns), skip step 1. If your change doesn't affect the API server, skip step 2.
 
-> **Incorrect deployment order will cause downtime**
->
-> If you deploy the API server before the schema change has replicated, mutators and/or queries will fail because they will refer to non-existent columns.
+> 👨‍🏫 **Incorrect deployment order will cause downtime**: If you deploy the API server before the schema change has replicated, mutators and/or queries will fail because they will refer to non-existent columns.
 >
 > If you deploy the client before the API change, the client will call mutators/queries that don't exist yet.
 >
-> Both these issues will cause Zero to go into an [error](/docs/connection#error) state. The user can manually reload to recover from this as soon as the depended-upon component has been deployed.
+> Both these issues will cause Zero to go into an [error](connection.md#error) state. The user can manually reload to recover from this as soon as the depended-upon component has been deployed.
 
 ### Contract Changes
 
@@ -397,9 +382,7 @@ When you're removing a column, table, or mutator/query:
 2. Deploy the API server (stop providing the thing being removed).
 3. Deploy the database change.
 
-> **Handling old clients**
->
-> When a client connects to `zero-cache`, it sends the schema it was built against. If that schema is incompatible with what `zero-cache` has (for example if server has just contracted), the client receives an error and calls `onUpdateNeeded`:
+> **Handling old clients**: When a client connects to `zero-cache`, it sends the schema it was built against. If that schema is incompatible with what `zero-cache` has (for example if server has just contracted), the client receives an error and calls `onUpdateNeeded`:
 >
 > ```ts
 > new Zero({
@@ -440,14 +423,14 @@ Add a `bio` column to the `users` table:
    Wait for replication.
 
 2. **Deploy API server**
-   - Add `bio` to schema.ts
-   - Add any new queries that read `bio`
-   - Add any new mutators that write to `bio`
-   - Deploy
+   * Add `bio` to schema.ts
+   * Add any new queries that read `bio`
+   * Add any new mutators that write to `bio`
+   * Deploy
 
 3. **Deploy client**
-   - Update app code to display/edit `bio`
-   - Deploy
+   * Update app code to display/edit `bio`
+   * Deploy
 
 For full-stack frameworks, steps 2 and 3 are a single deploy.
 
@@ -458,14 +441,14 @@ Even when the API server and client are separate, they can be deployed in sequen
 Remove the `bio` column from the `users` table:
 
 1. **Deploy client**
-   - Remove `bio` from app code
-   - Deploy
+   * Remove `bio` from app code
+   * Deploy
 
 2. **Deploy API server**
-   - Remove mutators that write to `bio`
-   - Remove queries that read `bio`
-   - Remove `bio` from schema.ts
-   - Deploy
+   * Remove mutators that write to `bio`
+   * Remove queries that read `bio`
+   * Remove `bio` from schema.ts
+   * Deploy
 
 3. **Remove column from database**
    ```sql
@@ -513,16 +496,16 @@ Rename `nickname` to `displayName`:
    Wait for replication.
 
 2. **Deploy app using new column**
-   - Add `displayName` to schema.ts
-   - Update app code to read/write `displayName`
-   - Update queries to read/write `displayName`
-   - Update mutators to use `displayName`
-   - Deploy API → Client
+   * Add `displayName` to schema.ts
+   * Update app code to read/write `displayName`
+   * Update queries to read/write `displayName`
+   * Update mutators to use `displayName`
+   * Deploy API → Client
 
 3. **Remove old column**
-   - Remove `nickname` from schema.ts
-   - Deploy Client → API
-   - Drop trigger and old column:
+   * Remove `nickname` from schema.ts
+   * Deploy Client → API
+   * Drop trigger and old column:
    ```sql
    DROP TRIGGER sync_display_name_trigger ON users;
    DROP FUNCTION sync_display_name();
@@ -572,15 +555,15 @@ The safest approach is to treat this like a rename—create a new nullable colum
    Wait for replication.
 
 2. **Deploy app using new column**
-   - Add `nicknameV2` to schema.ts as `optional()`
-   - Update app code to handle nulls
-   - Deploy API → Client
+   * Add `nicknameV2` to schema.ts as `optional()`
+   * Update app code to handle nulls
+   * Deploy API → Client
 
 3. **Remove old column**
-   - Remove `nickname` from schema.ts
-   - Rename `nickname_v2` to `nickname` if desired (another rename cycle), or keep the new name
-   - Deploy Client → API
-   - Drop trigger and old column
+   * Remove `nickname` from schema.ts
+   * Rename `nickname_v2` to `nickname` if desired (another rename cycle), or keep the new name
+   * Deploy Client → API
+   * Drop trigger and old column
 
 ### Quick Reference
 
@@ -598,9 +581,9 @@ The safest approach is to treat this like a rename—create a new nullable colum
 
 When you add a new column or table to your schema, initial data (from e.g., `GENERATED`, `DEFAULT`, `CURRENT_TIMESTAMP`, etc.) needs to be replicated to `zero-cache` and synced to clients.
 
-Similarly, when adding an existing column to a [custom publication](/docs/postgres-support#zero-cache-replication), that column's existing data needs to be replicated.
+Similarly, when adding an existing column to a [custom publication](postgres-support.md#zero-cache-replication), that column's existing data needs to be replicated.
 
-Zero handles both these cases through a process called _backfilling_.
+Zero handles both these cases through a process called *backfilling*.
 
 Zero backfills existing data to the replica in the background after detecting a new column. The new column is not exposed to the client until all data has been backfilled, which may take some time depending on the amount of data.
 
@@ -609,3 +592,5 @@ Zero backfills existing data to the replica in the background after detecting a 
 To track backfill progress, check your `zero-cache` logs for messages about backfilling status.
 
 If you're using [Cloud Zero](https://zerosync.dev/#pricing), backfill progress is displayed directly in the dashboard.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

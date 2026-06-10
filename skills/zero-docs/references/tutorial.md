@@ -2,9 +2,9 @@
 
 Let's build a small music app with Zero from scratch. It's a nice way to get a feel for how Zero works and takes about 15 minutes to complete.
 
-You will seed a Postgres database with artists and albums, run `zero-cache`, add a [query](/docs/queries) and a [mutator](/docs/mutators), and watch data sync across clients in realtime.
+You will seed a Postgres database with artists and albums, run `zero-cache`, add a [query](queries.md) and a [mutator](mutators.md), and watch data sync across clients in realtime.
 
-If you want to wire Zero into your own app, see [Installation](/docs/install).
+If you want to wire Zero into your own app, see [Installation](install.md).
 
 ## Setup
 
@@ -12,22 +12,9 @@ If you want to wire Zero into your own app, see [Installation](/docs/install).
 
 Start with a TypeScript frontend framework:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-  ]}
->
+**TanStack Start**
+
+**npm**
 
 ```bash
 npx @tanstack/cli@latest create zero-music \
@@ -35,11 +22,15 @@ npx @tanstack/cli@latest create zero-music \
 cd zero-music
 ```
 
+**pnpm**
+
 ```bash
 pnpm dlx @tanstack/cli@latest create zero-music \
   --package-manager pnpm --yes --no-intent
 cd zero-music
 ```
+
+**bun**
 
 ```bash
 bunx @tanstack/cli@latest create zero-music \
@@ -47,20 +38,32 @@ bunx @tanstack/cli@latest create zero-music \
 cd zero-music
 ```
 
+**Next.js**
+
+**npm**
+
 ```bash
 npx create-next-app@latest zero-music --yes --use-npm
 cd zero-music
 ```
+
+**pnpm**
 
 ```bash
 pnpm create next-app zero-music --yes --use-pnpm
 cd zero-music
 ```
 
+**bun**
+
 ```bash
 npx create-next-app@latest zero-music --yes --use-bun
 cd zero-music
 ```
+
+**SolidStart**
+
+**npm**
 
 ```bash
 npm init solid -- zero-music basic --solidstart --ts --v2
@@ -68,11 +71,15 @@ cd zero-music
 npm install
 ```
 
+**pnpm**
+
 ```bash
 pnpm create solid zero-music basic --solidstart --ts --v2
 cd zero-music
 pnpm install
 ```
+
+**bun**
 
 ```bash
 bun create solid zero-music basic --solidstart --ts --v2
@@ -84,12 +91,7 @@ bun install
 
 You'll need a Postgres database with logical replication enabled.
 
-<CodeGroup
-  labels={[
-    {text: 'Docker', sync: {db: 'docker'}},
-    {text: 'Postgres.app', sync: {db: 'postgres-app'}},
-  ]}
->
+**Docker**
 
 ```bash
 # IMPORTANT: logical WAL level is required for Zero
@@ -101,6 +103,8 @@ docker run -d --name zero-postgres \
   postgres:18 \
   postgres -c wal_level=logical
 ```
+
+**Postgres.app**
 
 ```bash
 # Start Postgres.app first. Requires Postgres 15 or higher.
@@ -115,10 +119,7 @@ psql -d postgres -c "ALTER SYSTEM SET wal_level = 'logical';"
 psql -d postgres -c "SHOW wal_level;"
 ```
 
-> **Already using another Postgres provider?**
->
-> See [Connecting to Postgres](/docs/connecting-to-postgres)
->   and make sure `wal_level` is `logical`.
+> 🧑‍💻 **Already using another Postgres provider?**: See [Connecting to Postgres](connecting-to-postgres.md)and make sure `wal_level` is `logical`.
 
 Then, create some music-themed tables and seed them with data (this step uses `psql` if you don't already have it).
 
@@ -139,18 +140,14 @@ ZERO_UPSTREAM_DB="postgres://postgres:pass@localhost:5432/zero"
 
 Add Zero and the dependencies used in this tutorial with your preferred package manager:
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-  ]}
->
+**npm**
 
 ```bash
 npm install @rocicorp/zero zod pg
 npm install -D @types/pg
 ```
+
+**pnpm**
 
 ```bash
 pnpm add @rocicorp/zero zod pg
@@ -163,6 +160,8 @@ pnpm add -D @types/pg
 #   '@rocicorp/zero-sqlite3': true
 pnpm rebuild @rocicorp/zero-sqlite3
 ```
+
+**bun**
 
 ```bash
 bun add @rocicorp/zero zod pg
@@ -180,21 +179,19 @@ This tutorial uses Zod; any [Standard Schema](https://standardschema.dev/)-compa
 
 Start the development `zero-cache`:
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-  ]}
->
+**npm**
 
 ```bash
 npx zero-cache-dev
 ```
 
+**pnpm**
+
 ```bash
 pnpm exec zero-cache-dev
 ```
+
+**bun**
 
 ```bash
 bunx zero-cache-dev
@@ -202,7 +199,7 @@ bunx zero-cache-dev
 
 Zero will start listening on port 4848 and continuously replicate your upstream database into a SQLite replica, which is created by default at `zero.db`.
 
-The replica is an implementation detail and you will not interact with it directly, but you can inspect the replica with [`zero-sqlite3`](/docs/debug/replication#inspecting) in another terminal to see how zero-cache syncs data:
+The replica is an implementation detail and you will not interact with it directly, but you can inspect the replica with [`zero-sqlite3`](debug/replication.md#inspecting) in another terminal to see how zero-cache syncs data:
 
 ```bash
 npx @rocicorp/zero-sqlite3 ./zero.db "SELECT title FROM albums ORDER BY id;"
@@ -213,8 +210,7 @@ npx @rocicorp/zero-sqlite3 ./zero.db "SELECT title FROM albums ORDER BY id;"
 # Revolver
 ```
 
-Or try reading from `zero.db` while connected to Postgres at `postgres://postgres:pass@localhost:5432/zero`.
-If you change something in Postgres, you'll see it immediately show up in the replica:
+Or try reading from `zero.db` while connected to Postgres at `postgres://postgres:pass@localhost:5432/zero`. If you change something in Postgres, you'll see it immediately show up in the replica:
 
 ```bash
 # Uses watch, e.g.: brew install watch
@@ -222,12 +218,7 @@ watch -n 0.5 "npx @rocicorp/zero-sqlite3 ./zero.db \
   'SELECT * FROM albums ORDER BY created_at;'"
 ```
 
-<Video
-  src="/video/tutorial/pg-zero-sync-v1.mp4"
-  alt="Zero-cache syncing between Postgres and SQLite"
-  poster="/video/tutorial/pg-zero-sync-v1.webp"
-  animation
-/>
+[Zero-cache syncing between Postgres and SQLite](https://zero.rocicorp.dev/video/tutorial/pg-zero-sync-v1.mp4)
 
 ## Integrate Zero
 
@@ -243,40 +234,13 @@ curl https://raw.githubusercontent.com/rocicorp/zero-music/1-install/packages/ze
   -o src/zero/schema.ts
 ```
 
-> **For a real app, use a generated schema**
->
-> This quickstart uses a premade `schema.ts` so you can stay
->   focused on how Zero works. In a real app, you would
->   usually generate `schema.ts` from your own Drizzle or
->   Prisma schema, or manually add it alongside your
->   application schema. See
->   [Installation](/docs/install#set-up-your-zero-schema) and
->   [Zero Schema](/docs/schema).
+> 🧑‍💻 **For a real app, use a generated schema**: This quickstart uses a premade `schema.ts` so you can stay focused on how Zero works. In a real app, you would usually generate `schema.ts` from your own Drizzle or Prisma schema, or manually add it alongside your application schema. See [Installation](install.md#set-up-your-zero-schema) and [Zero Schema](schema.md).
 
 ### Set Up the Zero Client
 
 Zero has first-class support for React and SolidJS. There is also a low-level API you can use in any TypeScript-based project.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```tsx
 // src/routes/__root.tsx
@@ -303,14 +267,18 @@ function RootDocument({children}: {children: ReactNode}) {
   return (
     <html lang="en">
       <head>
+        <HeadContent />
       </head>
       <body>
         <ZeroProvider {...opts}>{children}</ZeroProvider>
+        <Scripts />
       </body>
     </html>
   )
 }
 ```
+
+**Next.js**
 
 ```tsx
 // src/app/providers.tsx
@@ -353,6 +321,8 @@ export default function RootLayout({
 }
 ```
 
+**SolidStart**
+
 ```tsx
 // src/app.tsx
 import {MetaProvider, Title} from '@solidjs/meta'
@@ -370,15 +340,23 @@ const opts: ZeroOptions = {
 
 export default function App() {
   return (
+    <ZeroProvider {...opts}>
       <Router
         root={props => (
+          <MetaProvider>
             <Title>Zero Music</Title>
             <Suspense>{props.children}</Suspense>
+          </MetaProvider>
         )}
       >
+        <FileRoutes />
+      </Router>
+    </ZeroProvider>
   )
 }
 ```
+
+**TypeScript**
 
 ```tsx
 // src/zero.ts
@@ -425,14 +403,9 @@ export const queries = defineQueries({
 
 These are defined using Zero Query Language (ZQL) - it allows you to build queries with filters, sorts, relationships, and more:
 
-<Video
-  src="/video/tutorial/zql-autocomplete-v1.mp4"
-  alt="Code editor with ZQL autocomplete"
-  poster="/video/tutorial/zql-autocomplete-v1.webp"
-  animation
-/>
+[Code editor with ZQL autocomplete](https://zero.rocicorp.dev/video/tutorial/zql-autocomplete-v1.mp4)
 
-See [Reading Data](/docs/queries) for more on how ZQL works.
+See [Reading Data](queries.md) for more on how ZQL works.
 
 ### Add Query Endpoint
 
@@ -440,22 +413,7 @@ Zero doesn't allow clients to send arbitrary ZQL to `zero-cache`.
 
 Instead, Zero sends the query name and arguments to the `query` endpoint on your server, which responds to `zero-cache` with the authoritative ZQL. This prevents clients from reading arbitrary data and is the basis of permissions.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {api: 'solid'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```ts
 // src/routes/api/query.ts
@@ -486,6 +444,8 @@ export const Route = createFileRoute('/api/query')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // src/app/api/query/route.ts
 import {handleQueryRequest} from '@rocicorp/zero/server'
@@ -507,6 +467,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**SolidStart**
 
 ```ts
 // src/routes/api/query.ts
@@ -533,21 +495,19 @@ export async function POST(event: APIEvent) {
 
 Start your app server in another terminal so `zero-cache` can reach the query endpoint:
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-  ]}
->
+**npm**
 
 ```bash
 npm run dev
 ```
 
+**pnpm**
+
 ```bash
 pnpm dev
 ```
+
+**bun**
 
 ```bash
 bun run dev
@@ -555,13 +515,7 @@ bun run dev
 
 Restart `zero-cache` with `ZERO_QUERY_URL` so it knows about the new query endpoint:
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-  ]}
->
+**npm**
 
 ```bash
 # Update localhost:3000 with your local server
@@ -569,11 +523,15 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
   npx zero-cache-dev
 ```
 
+**pnpm**
+
 ```bash
 # Update localhost:3000 with your local server
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
   pnpm exec zero-cache-dev
 ```
+
+**bun**
 
 ```bash
 # Update localhost:3000 with your local server
@@ -585,26 +543,7 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
 
 Use the seeded data to fetch albums for The Beatles under `artist_1`.
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```tsx
 // src/routes/index.tsx
@@ -633,6 +572,8 @@ function Home() {
 }
 ```
 
+**Next.js**
+
 ```tsx
 // src/app/page.tsx
 'use client'
@@ -657,6 +598,8 @@ export default function Page() {
 }
 ```
 
+**SolidStart**
+
 ```tsx
 // src/routes/index.tsx
 import {For} from 'solid-js'
@@ -671,12 +614,16 @@ export default function Home() {
   return (
     <main>
       <ul>
+        <For each={albums()}>
           {album => <li>{album.title}</li>}
+        </For>
       </ul>
     </main>
   )
 }
 ```
+
+**TypeScript**
 
 ```tsx
 // src/albums.ts
@@ -694,12 +641,7 @@ This query will run against the zero-cache replica and return `Abbey Road` and `
 
 Also, Zero queries are reactive, so if you edit data in Postgres directly, you will see it replicate to the Zero replica and the UI:
 
-<Video
-  src="/video/tutorial/query-pg-sync-v1.mp4"
-  alt="Zero-cache syncing between Postgres and SQLite and UI"
-  poster="/video/tutorial/query-pg-sync-v1.webp"
-  animation
-/>
+[Zero-cache syncing between Postgres and SQLite and UI](https://zero.rocicorp.dev/video/tutorial/query-pg-sync-v1.mp4)
 
 ## Mutate Data
 
@@ -732,30 +674,11 @@ export const mutators = defineMutators({
 })
 ```
 
-You can use the [CRUD-style API](/docs/mutators#writing-data) with `tx.mutate.<table>.<method>()` to write data. You can also use `tx.run(zql.<table>.<method>)` to run queries within your mutator.
+You can use the [CRUD-style API](mutators.md#writing-data) with `tx.mutate.<table>.<method>()` to write data. You can also use `tx.run(zql.<table>.<method>)` to run queries within your mutator.
 
 Register the mutators where you create the Zero client:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```tsx {3,9}
 // src/routes/__root.tsx
@@ -770,6 +693,8 @@ const opts: ZeroOptions = {
 }
 ```
 
+**Next.js**
+
 ```tsx {3,9}
 // src/app/providers.tsx
 import type {ZeroOptions} from '@rocicorp/zero'
@@ -783,6 +708,8 @@ const opts: ZeroOptions = {
 }
 ```
 
+**SolidStart**
+
 ```tsx {3,9}
 // src/app.tsx
 import type {ZeroOptions} from '@rocicorp/zero'
@@ -795,6 +722,8 @@ const opts: ZeroOptions = {
   mutators
 }
 ```
+
+**TypeScript**
 
 ```tsx {3,9}
 // src/zero.ts
@@ -813,11 +742,7 @@ const opts: ZeroOptions = {
 
 Zero requires a `mutate` endpoint that runs on your server and connects directly to Postgres.
 
-> **Why connect to Postgres?**
->
-> Mutations are written directly to Postgres and replicated
->   to the client. Your other code that writes to the same
->   tables will also sync instantly to the client.
+> 🧑‍💻 **Why connect to Postgres?**: Mutations are written directly to Postgres and replicated to the client. Your other code that writes to the same tables will also sync instantly to the client.
 
 First, create a `dbProvider` with `node-postgres`:
 
@@ -847,22 +772,7 @@ declare module '@rocicorp/zero' {
 
 Add the mutate endpoint itself:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {api: 'solid'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```ts
 // src/routes/api/mutate.ts
@@ -894,6 +804,8 @@ export const Route = createFileRoute('/api/mutate')({
 })
 ```
 
+**Next.js**
+
 ```ts
 // src/app/api/mutate/route.ts
 import {handleMutateRequest} from '@rocicorp/zero/server'
@@ -916,6 +828,8 @@ export async function POST(request: Request) {
   return Response.json(result)
 }
 ```
+
+**SolidStart**
 
 ```ts
 // src/routes/api/mutate.ts
@@ -943,13 +857,9 @@ export async function POST(event: APIEvent) {
 
 Restart `zero-cache` with `ZERO_MUTATE_URL` configured:
 
-<CodeGroup
-  labels={[
-    {text: 'npm', sync: {pm: 'npm'}},
-    {text: 'pnpm', sync: {pm: 'pnpm'}},
-    {text: 'bun', sync: {pm: 'bun'}},
-  ]}
->
+**npm**
+
+**tanstack**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -957,11 +867,7 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
   npx zero-cache-dev
 ```
 
-```bash
-ZERO_QUERY_URL="http://localhost:3000/api/query" \
-  ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
-  npx zero-cache-dev
-```
+**nextjs**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -969,11 +875,17 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
   npx zero-cache-dev
 ```
 
+**solid**
+
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
   ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
-  pnpm exec zero-cache-dev
+  npx zero-cache-dev
 ```
+
+**pnpm**
+
+**tanstack**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -981,11 +893,25 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
   pnpm exec zero-cache-dev
 ```
 
+**nextjs**
+
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
   ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
   pnpm exec zero-cache-dev
 ```
+
+**solid**
+
+```bash
+ZERO_QUERY_URL="http://localhost:3000/api/query" \
+  ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
+  pnpm exec zero-cache-dev
+```
+
+**bun**
+
+**tanstack**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -993,11 +919,15 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
   bunx zero-cache-dev
 ```
 
+**nextjs**
+
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
   ZERO_MUTATE_URL="http://localhost:3000/api/mutate" \
   bunx zero-cache-dev
 ```
+
+**solid**
 
 ```bash
 ZERO_QUERY_URL="http://localhost:3000/api/query" \
@@ -1009,26 +939,7 @@ ZERO_QUERY_URL="http://localhost:3000/api/query" \
 
 Now add a button to create an album:
 
-<CodeGroup
-  labels={[
-    {
-      text: 'TanStack Start',
-      sync: {client: 'react', api: 'tanstack'},
-    },
-    {
-      text: 'Next.js',
-      sync: {client: 'react', api: 'nextjs'},
-    },
-    {
-      text: 'SolidStart',
-      sync: {client: 'solidjs', api: 'solid'},
-    },
-    {
-      text: 'TypeScript',
-      sync: {client: 'typescript'},
-    },
-  ]}
->
+**TanStack Start**
 
 ```tsx {3-4,12,17-26,30}
 // src/routes/index.tsx
@@ -1071,6 +982,8 @@ function Home() {
 }
 ```
 
+**Next.js**
+
 ```tsx {4-5,9,14-23,27}
 // src/app/page.tsx
 'use client'
@@ -1109,6 +1022,8 @@ export default function Page() {
 }
 ```
 
+**SolidStart**
+
 ```tsx {3-4,8,13-22,26}
 // src/routes/index.tsx
 import {For} from 'solid-js'
@@ -1137,12 +1052,16 @@ export default function Home() {
     <main>
       <button onClick={onClick}>Create Album</button>
       <ul>
+        <For each={albums()}>
           {album => <li>{album.title}</li>}
+        </For>
       </ul>
     </main>
   )
 }
 ```
+
+**TypeScript**
 
 ```tsx {3,6-13}
 // src/albums.ts
@@ -1173,17 +1092,14 @@ When you run the mutator, Zero writes to the local database, updates queries opt
 
 Your mutate endpoint writes to Postgres and zero-cache will instantly replicate those changes to other clients:
 
-<Video
-  src="/video/tutorial/multiple-clients-v1.mp4"
-  alt="Zero syncing data between multiple clients"
-  poster="/video/tutorial/multiple-clients-v1.webp"
-  animation
-/>
+[Zero syncing data between multiple clients](https://zero.rocicorp.dev/video/tutorial/multiple-clients-v1.mp4)
 
 That's it! You now have a simple, Zero-powered music app. Try opening multiple browser windows to see the realtime sync in action!
 
 ## Next Steps
 
-- [Learn how to add auth](/docs/auth)
-- [Try adding Zero to your existing app](/docs/install)
-- [Play with fully-fleshed out samples](/docs/samples)
+* [Learn how to add auth](auth.md)
+* [Try adding Zero to your existing app](install.md)
+* [Play with fully-fleshed out samples](samples.md)
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

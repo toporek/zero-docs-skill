@@ -8,8 +8,7 @@ If you need to read one of these, save the AST to a json file. Then run the foll
 cat ast.json | npx ast-to-zql
 ```
 
-The returned ZQL query will be using server names, rather than client names, to identify columns and tables.
-If you provide the schema file as an option you will get mapped back to client names:
+The returned ZQL query will be using server names, rather than client names, to identify columns and tables. If you provide the schema file as an option you will get mapped back to client names:
 
 ```bash
 cat ast.json | npx ast-to-zql --schema schema.ts
@@ -17,9 +16,6 @@ cat ast.json | npx ast-to-zql --schema schema.ts
 
 This comes into play if, in your schema.ts, you use the `from` feature to have different names on the client than your backend DB.
 
-> **Note**
->
-> The `ast-to-zql` process is a de-compilation of sorts.
->   Given that, the ZQL string you get back will not be
->   identical to the one you wrote in your application.
->   Regardless, the queries will be semantically equivalent.
+> The `ast-to-zql` process is a de-compilation of sorts. Given that, the ZQL string you get back will not be identical to the one you wrote in your application. Regardless, the queries will be semantically equivalent.
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

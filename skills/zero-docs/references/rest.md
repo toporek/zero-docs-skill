@@ -1,5 +1,9 @@
 # REST
 
+Creating REST APIs for Zero Applications
+
+# REST
+
 If you need a traditional REST surface (for webhooks, third-party integrations, CLI tools, etc), you can easily generate one from your Zero mutator registry without having to duplicate any code.
 
 This is optional. Zero clients do not use this API. They still use `zero.mutate(...)` and your `ZERO_MUTATE_URL` endpoint.
@@ -13,8 +17,8 @@ This is optional. Zero clients do not use this API. They still use `zero.mutate(
 
 For example:
 
-- `POST /api/mutators/cart/add` maps to mutator name `cart.add`
-- `POST /api/mutators/cart/remove` maps to mutator name `cart.remove`
+* `POST /api/mutators/cart/add` maps to mutator name `cart.add`
+* `POST /api/mutators/cart/remove` maps to mutator name `cart.remove`
 
 This pattern works nicely because Zero mutators have more requirements than regular APIs. Namely they require an open transaction to be passed in. So it's easier to generate REST APIs from mutators than the reverse.
 
@@ -59,23 +63,20 @@ For API discovery, expose an OpenAPI document (for example `/api/openapi.json`) 
 
 Typical setup:
 
-- discover mutator names at runtime
-- generate one `POST` operation per mutator path
-- include request/response schemas
-- serve Swagger UI from `/api/docs`
+* discover mutator names at runtime
+* generate one `POST` operation per mutator path
+* include request/response schemas
+* serve Swagger UI from `/api/docs`
 
-> **Keep validators separately exportable**
+> 💡 **Keep validators separately exportable**: `defineMutators()` returns callable mutators, but does not expose validator schemas on the resulting registry object.
 >
-> `defineMutators()` returns callable mutators, but does not
->   expose validator schemas on the resulting registry object.
->
-> If you want schema-driven docs, export your validator map
-> separately and reuse those schema objects in
-> `defineMutator(...)`.
+> If you want schema-driven docs, export your validator map separately and reuse those schema objects in `defineMutator(...)`.
 
 ## Full Working Example
 
 See the `ztunes` sample for a full implementation:
 
-- Source: https://github.com/rocicorp/ztunes
-- Swagger docs: https://ztunes.rocicorp.dev/api/docs
+* Source: [https://github.com/rocicorp/ztunes](https://github.com/rocicorp/ztunes)
+* Swagger docs: [https://ztunes.rocicorp.dev/api/docs](https://ztunes.rocicorp.dev/api/docs)
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

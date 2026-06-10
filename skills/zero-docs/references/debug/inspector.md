@@ -6,17 +6,11 @@ Zero includes a rich inspector API that can help you understand performance or b
 
 You access the inspector right from the standard developer console in your browser:
 
-<ImageLightbox
-  src="/images/debugging/inspector/hello.png"
-  caption="Why hello there, inspector!"
-/>
+![Why hello there, inspector!](https://zero.rocicorp.dev/images/debugging/inspector/hello.png)
 
 For convenience, `Zero` automatically injects itself as `__zero` on the global scope of every Zero app.
 
-> **Password protected in production**
->
-> Access to the inspector is gated behind the
->   [`ZERO_ADMIN_PASSWORD`](/docs/zero-cache-config#admin-password) config variable in production (when `NODE_ENV` is set to "production").
+> 🔒 **Password protected in production**: Access to the inspector is gated behind the [`ZERO_ADMIN_PASSWORD`](../zero-cache-config.md#admin-password) config variable in production (when `NODE_ENV` is set to "production").
 >
 > We require this variable to be set to a non-empty value in production because we want the inspector enabled in all Zero apps without requiring a restart.
 
@@ -36,13 +30,11 @@ let qs = await inspector.client.queries()
 console.table(qs)
 ```
 
-> **Clients vs Groups**
+> **Clients vs Groups**: In Zero, each instance of the `Zero` class is a *client*. Each client belongs to a *group*, which is a set of clients that share the same `clientGroupID` (typically all clients within a browser profile).
 >
-> In Zero, each instance of the `Zero` class is a *client*. Each client belongs to a *group*, which is a set of clients that share the same `clientGroupID` (typically all clients within a browser profile).
+> Zero syncs all clients in a group together, so they all see the same data. So if you are debugging performance, you often want to look at the queries for the *group*, since that is what Zero is actually syncing.
 >
-> Zero syncs all clients in a group together, so they all see the same data. So if you are debugging performance, you often want to look at the queries for the _group_, since that is what Zero is actually syncing.
->
-> But if you are trying to understand when particular queries get added, it's convenient to look at the queries for just the current _client_ so that queries from other clients aren't mixed in.
+> But if you are trying to understand when particular queries get added, it's convenient to look at the queries for just the current *client* so that queries from other clients aren't mixed in.
 
 ## Queries
 
@@ -55,27 +47,24 @@ console.log(qs[0])
 
 This outputs something like:
 
-<ImageLightbox
-  src="/images/debugging/inspector/query.png"
-  caption="Information about a query"
-/>
+![Information about a query](https://zero.rocicorp.dev/images/debugging/inspector/query.png)
 
 Here are some of the more useful fields:
 
-| Field                                    | Description                                                                                         |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `name`, `args`                           | The name and arguments of the synced query.                                                         |
-| `clientZQL`                              | The client-side ZQL run to give optimistic results.                                                 |
-| `serverZQL`                              | The server-side ZQL that your `get-queries` endpoint returned for this query.                       |
-| `got`                                    | Whether the first authoritative result has been returned.                                           |
-| `hydrateClient`                          | How long the client took to hydrate the first optimistic result.                                    |
-| `hydrateServer`                          | How long the server took to hydrate the first authoritative result.                                 |
-| `hydrateTotal`                           | Total time to hydrate the first authoritative result, including network.                            |
-| `rowCount`                               | Number of rows the query returns.                                                                   |
-| `ttl`                                    | The ttl specified when the query was created.                                                       |
-| `inactivatedAt`                          | If non-null, the UI is no longer actively using this query, but it's still running due to `ttl`.    |
-| `updateClientP50`,<br/>`updateClientP95` | Median and 95th percentile time to update the client-side result after a mutation (optimistically). |
-| `updateServerP50`,<br/>`updateServerP95` | Median and 95th percentile time to update the server-side result after a mutation.                  |
+| Field                               | Description                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `name`, `args`                      | The name and arguments of the synced query.                                                         |
+| `clientZQL`                         | The client-side ZQL run to give optimistic results.                                                 |
+| `serverZQL`                         | The server-side ZQL that your `get-queries` endpoint returned for this query.                       |
+| `got`                               | Whether the first authoritative result has been returned.                                           |
+| `hydrateClient`                     | How long the client took to hydrate the first optimistic result.                                    |
+| `hydrateServer`                     | How long the server took to hydrate the first authoritative result.                                 |
+| `hydrateTotal`                      | Total time to hydrate the first authoritative result, including network.                            |
+| `rowCount`                          | Number of rows the query returns.                                                                   |
+| `ttl`                               | The ttl specified when the query was created.                                                       |
+| `inactivatedAt`                     | If non-null, the UI is no longer actively using this query, but it's still running due to `ttl`.    |
+| `updateClientP50`,`updateClientP95` | Median and 95th percentile time to update the client-side result after a mutation (optimistically). |
+| `updateServerP50`,`updateServerP95` | Median and 95th percentile time to update the server-side result after a mutation.                  |
 
 ## Analyzing Queries
 
@@ -85,10 +74,7 @@ Use the `analyze` method to get information about how a query hydrates:
 await qs[0].analyze()
 ```
 
-<ImageLightbox
-  src="/images/debugging/inspector/analyze.png"
-  caption="Analyzing a query"
-/>
+![Analyzing a query](https://zero.rocicorp.dev/images/debugging/inspector/analyze.png)
 
 Here are some of the most useful fields in the output:
 
@@ -106,9 +92,9 @@ Here are some of the most useful fields in the output:
 
 A Zero query is composed of one or more single-table queries connected by joins (`related`, `whereExists`).
 
-Zero delegates the single-table queries to `SQLite`, which has a sophisticated query planner that chooses the best indexes to use. SQLite will _scan_ tables or indexes to find rows to satisfy the single-table query.
+Zero delegates the single-table queries to `SQLite`, which has a sophisticated query planner that chooses the best indexes to use. SQLite will *scan* tables or indexes to find rows to satisfy the single-table query.
 
-Zero then implements its own incremental joins and limits on top of these single-table outputs. It _reads_ rows out of the single-table outputs to satisfy the joins and limits.
+Zero then implements its own incremental joins and limits on top of these single-table outputs. It *reads* rows out of the single-table outputs to satisfy the joins and limits.
 
 Generally, you want the number of rows scanned by SQLite and read into JavaScript by Zero to be small multiples of the number of rows synced to the client. Most Zero query performance problems come from either too many active queries (visible from [`inspector.client.queries()`](#queries)), or queries that scan or read too many rows (visible by looking at the [SQLite](#viewing-sqlite-plans) or [Zero](#viewing-zero-plans) respectively).
 
@@ -116,10 +102,7 @@ Generally, you want the number of rows scanned by SQLite and read into JavaScrip
 
 To view the plans selected by `SQLite`, see the `sqlitePlans` field returned by `analyze()` or `analyzeQuery()`. This contains the output of SQLite's [`EXPLAIN QUERY PLAN`](https://www.sqlite.org/eqp.html) command for each SQLite query used:
 
-<ImageLightbox
-  src="/images/debugging/inspector/table-plans.png"
-  caption="SQLite EXPLAIN QUERY PLAN output"
-/>
+![SQLite EXPLAIN QUERY PLAN output](https://zero.rocicorp.dev/images/debugging/inspector/table-plans.png)
 
 If SQLite is scanning too many rows, it probably means that SQLite lacks a good index to use. Add the index to Postgres – Zero copies indexes from Postgres to the SQLite replica.
 
@@ -129,10 +112,7 @@ Another common problem visible in SQLite plans is `TEMP B-TREE` entries: SQLite 
 
 To view the join plan selected by Zero, call `analyze()` or `analyzeQuery()` with the `joinPlans` option set to true and see the `joinPlans` field in the output:
 
-<ImageLightbox
-  src="/images/debugging/inspector/join-plans.png"
-  caption="Zero join planner output"
-/>
+![Zero join planner output](https://zero.rocicorp.dev/images/debugging/inspector/join-plans.png)
 
 This output is mostly useful to the Zero team for debugging query performance problems.
 
@@ -188,3 +168,5 @@ console.log(
   await inspector.serverVersion()
 )
 ```
+
+**For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt
