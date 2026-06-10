@@ -13,11 +13,12 @@ import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectMeta } from './lib/collect.mjs';
 import { buildIndex } from './lib/index-gen.mjs';
-import { finalizeDoc, rewriteDocLinks } from './lib/transform.mjs';
+import { finalizeDoc, rewriteDocLinks, buildOverview } from './lib/transform.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VENDOR = join(ROOT, '.vendor', 'zero-docs');
 const DOCS = join(VENDOR, 'contents', 'docs');
+const LLMS_BASE = join(VENDOR, 'lib', 'llms-base.md');
 const SKILL = join(ROOT, 'skills', 'zero-docs');
 const REFS = join(SKILL, 'references');
 const INDEX = join(SKILL, 'INDEX.md');
@@ -86,6 +87,11 @@ async function main() {
   const files = new Map();
   for (const e of entries) {
     files.set(e.path, rewriteDocLinks(finalizeDoc(bodies.get(e.path), e.title), e.path, fileSet));
+  }
+  if (existsSync(LLMS_BASE)) {
+    files.set('overview.md', buildOverview(readFileSync(LLMS_BASE, 'utf8')));
+  } else {
+    console.warn('Note: lib/llms-base.md not found upstream; skipping overview.md');
   }
   const index = buildIndex(entries);
 
