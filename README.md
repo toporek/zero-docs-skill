@@ -35,3 +35,15 @@ inner content is kept. A small number of upstream components inject content at
 build time (e.g. `SyncedCode`); where the source MDX has no inline body, that
 content is not captured. The sync logs every stripped component name so coverage
 gaps are visible.
+
+## License & attribution
+
+Documentation content under `skills/zero-docs/references/` is © Rocicorp,
+mirrored from [rocicorp/zero-docs](https://github.com/rocicorp/zero-docs) and
+[zero.rocicorp.dev](https://zero.rocicorp.dev) under the
+[Apache License 2.0](LICENSE), with mechanical modifications (fetched as
+rendered markdown; internal links rewritten to local paths). The sync tooling
+in this repo is also Apache-2.0.
+
+This is an unofficial community project, not affiliated with or endorsed by
+Rocicorp. "Zero" and "Rocicorp" are names of their respective owners.
