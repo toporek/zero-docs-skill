@@ -5,42 +5,53 @@ description: Use when writing, configuring, or debugging code that uses Rocicorp
 
 # Zero Docs
 
-Local mirror of the official [Rocicorp Zero](https://zero.rocicorp.dev) documentation,
-regenerated from https://github.com/rocicorp/zero-docs. Use it to ground any Zero
-answer in the real docs rather than recalling APIs from memory.
+Local, version-pinned mirror of the official [Rocicorp Zero](https://zero.rocicorp.dev)
+docs (TypeScript query-driven sync engine), plus a reasoning layer. Ground every
+Zero answer in these files instead of recalling APIs from memory.
 
-## How to use this skill
+## Always start here
 
-1. Open `INDEX.md` (in this directory) to find the topic(s) relevant to the task.
-   Topics are grouped: Guides, Debugging, Deprecated, Release Notes.
-2. Read the matching file(s) under `references/`. Each mirrors one upstream doc
-   (e.g. `references/zql.md`, `references/schema.md`, `references/zero-cache-config.md`).
-3. When you need something not obviously in the index, grep `references/` for the
-   symbol or term, e.g. `grep -ri "relationships(" references/`.
+1. **Read `references/overview.md`** — upstream's curated mental-models + gotchas
+   briefing. It applies to every Zero task.
+2. **Check the installed version** — `@rocicorp/zero` in package.json. The docs
+   in `references/` describe the latest version; older projects need different
+   APIs. See `migration.md`.
 
-## Common entry points
+## Version guardrail — STOP before writing a removed API
 
-- **Queries / ZQL:** `references/zql.md`, `references/queries.md`, `references/server-zql.md`
-- **Schema & relationships:** `references/schema.md`
-- **Writes:** `references/mutators.md`
-- **Auth & permissions:** `references/auth.md`
-- **Config & hosting:** `references/zero-cache-config.md`, `references/self-host.md`, `references/connecting-to-postgres.md`
-- **Framework bindings:** `references/react.md`, `references/solidjs.md`, `references/react-native.md`
-- **Getting started:** `references/quickstart.md`, `references/install.md`, `references/tutorial.md`
+Zero's 0.25 release removed/renamed large parts of the API. If you are about to
+write any of these, you are likely using training-memory APIs that no longer
+exist — open `migration.md` and check the installed version first:
 
-## Version awareness
+- `definePermissions(...)` / RLS `row.select/insert/update` rules
+- `z.mutate.table.insert/update/delete(...)` (old CRUD mutators)
+- a client `z.query.*` expected to **sync new data** from the server
+- `serverURL` (now `cacheURL`), `auth: () => ...` (now a string), `onError` (now Connection Status API)
 
-Zero's API evolves quickly. Check the project's installed version
-(`@rocicorp/zero` in package.json) before answering:
+## Task → which docs to read
 
-- If it's older than the latest release notes in `references/release-notes/`,
-  scan the notes between the two versions for renames/removals.
-- `references/deprecated/` (CRUD mutators, ad-hoc queries, RLS permissions)
-  describes APIs removed from current Zero — consult those docs only when the
-  project is pinned to a version that still has them, and say so explicitly.
+| Task | Read |
+|---|---|
+| Adding/changing a **write** | `references/mutators.md` + `references/schema.md` |
+| Adding/changing a **read / sync** | `references/queries.md` + `references/zql.md` + `references/schema.md` |
+| Writing **ZQL** filters/joins/ordering | `references/zql.md` (+ `references/schema.md`) |
+| **Schema / relationships / migrations** | `references/schema.md` (+ `references/postgres-support.md`) |
+| **Auth / permissions / login / `ctx`** | `references/auth.md` |
+| **Server endpoints / db adapters** | `references/queries.md` + `references/mutators.md` + `references/server-zql.md` |
+| **Config / env vars / cookies** | `references/zero-cache-config.md` + `references/connecting-to-postgres.md` |
+| **Self-hosting / deploy** | `references/self-host.md` + `references/connecting-to-postgres.md` |
+| **Framework wiring** (`ZeroProvider`, `useQuery`) | `references/react.md` / `references/solidjs.md` / `references/react-native.md` |
+| **Connection / error / `needs-auth`** | `references/connection.md` |
+| **Slow queries / debugging** | `references/debug/slow-queries.md`, `references/debug/inspector.md` |
+| **Old project / version mismatch** | `migration.md` → `references/release-notes/` + `references/deprecated/` |
 
-## Staleness
+## Anything else
 
-`SOURCE.md` (repo root) records the upstream commit this mirror was generated from.
-To refresh: run `npm run sync` in the plugin repo. The weekly GitHub Action opens a
-PR automatically when upstream changes.
+Open `INDEX.md` for the full topic list, or grep for a symbol:
+`grep -ri "defineMutator" references/`.
+
+## Provenance
+
+`SOURCE.md` records the upstream commit and that page bodies come from
+`zero.rocicorp.dev/docs/{slug}.md`. Changes newer than that sync may not be
+reflected; for bleeding-edge questions, confirm against the live docs.
