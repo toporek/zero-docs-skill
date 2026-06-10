@@ -1,0 +1,11 @@
+{
+  "name": "zero-docs",
+  "owner": { "name": "Pawel Topor", "url": "https://github.com/toporek" },
+  "plugins": [
+    {
+      "name": "zero-docs",
+      "source": "./",
+      "description": "Local, auto-synced mirror of the Rocicorp Zero docs (ZQL, schema, mutators, permissions, zero-cache) so Claude answers from real docs instead of guessing."
+    }
+  ]
+}
