@@ -28,6 +28,17 @@ answer in the real docs rather than recalling APIs from memory.
 - **Framework bindings:** `references/react.md`, `references/solidjs.md`, `references/react-native.md`
 - **Getting started:** `references/quickstart.md`, `references/install.md`, `references/tutorial.md`
 
+## Version awareness
+
+Zero's API evolves quickly. Check the project's installed version
+(`@rocicorp/zero` in package.json) before answering:
+
+- If it's older than the latest release notes in `references/release-notes/`,
+  scan the notes between the two versions for renames/removals.
+- `references/deprecated/` (CRUD mutators, ad-hoc queries, RLS permissions)
+  describes APIs removed from current Zero — consult those docs only when the
+  project is pinned to a version that still has them, and say so explicitly.
+
 ## Staleness
 
 `SOURCE.md` (repo root) records the upstream commit this mirror was generated from.
