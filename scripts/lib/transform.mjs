@@ -34,6 +34,45 @@ export function finalizeDoc(fetched, title) {
 }
 
 /**
+ * Rewrite internal doc links (absolute https://zero.rocicorp.dev/docs/... or
+ * root-relative /docs/...) to paths relative to `selfPath`, but only when the
+ * target exists in `files` (a Set of POSIX-relative generated paths). Directory
+ * slugs map to <slug>/index.md. Lines inside code fences are left untouched.
+ */
+export function rewriteDocLinks(body, selfPath, files) {
+  const fromDir = selfPath.includes('/')
+    ? selfPath.slice(0, selfPath.lastIndexOf('/')).split('/')
+    : [];
+  const relativeTo = (target) => {
+    const to = target.split('/');
+    let i = 0;
+    while (i < fromDir.length && i < to.length - 1 && fromDir[i] === to[i]) i++;
+    return [...Array(fromDir.length - i).fill('..'), ...to.slice(i)].join('/');
+  };
+  const linkRe = /\]\((?:https:\/\/zero\.rocicorp\.dev)?\/docs\/([A-Za-z0-9_/-]+?)(?:\.md)?(#[^)]*)?\)/g;
+  let inFence = false;
+  return body
+    .split('\n')
+    .map((line) => {
+      if (/^\s*(```|~~~)/.test(line)) {
+        inFence = !inFence;
+        return line;
+      }
+      if (inFence) return line;
+      return line.replace(linkRe, (match, slug, anchor) => {
+        const target = files.has(slug + '.md')
+          ? slug + '.md'
+          : files.has(slug + '/index.md')
+            ? slug + '/index.md'
+            : null;
+        if (!target) return match;
+        return '](' + relativeTo(target) + (anchor || '') + ')';
+      });
+    })
+    .join('\n');
+}
+
+/**
  * Remove MDX `import ... from ...`, side-effect imports, and `export ...` lines
  * that appear at the MDX top level. Lines inside fenced code blocks are preserved
  * verbatim so code examples stay intact.
