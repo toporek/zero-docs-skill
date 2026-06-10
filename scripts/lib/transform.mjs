@@ -49,6 +49,21 @@ export function finalizeDoc(fetched, title) {
 }
 
 /**
+ * Wrap upstream's curated agent briefing (lib/llms-base.md) as a reference doc.
+ * Content is kept verbatim; only a provenance header is prepended.
+ */
+export function buildOverview(rawLlmsBase) {
+  const body = rawLlmsBase.replace(/\r\n/g, '\n').trimEnd();
+  return (
+    '# Zero — Mental Models & Gotchas\n\n' +
+    '> Curated agent briefing, mirrored verbatim from upstream `lib/llms-base.md`.\n' +
+    '> Read this before answering any Zero question.\n\n' +
+    body +
+    '\n'
+  );
+}
+
+/**
  * Rewrite internal doc links (absolute https://zero.rocicorp.dev/docs/... or
  * root-relative /docs/...) to paths relative to `selfPath`, but only when the
  * target exists in `files` (a Set of POSIX-relative generated paths). Directory

@@ -1,7 +1,7 @@
 // scripts/lib/transform.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseFrontmatter, finalizeDoc, rewriteDocLinks } from './transform.mjs';
+import { parseFrontmatter, finalizeDoc, rewriteDocLinks, buildOverview } from './transform.mjs';
 
 test('parseFrontmatter extracts title and description', () => {
   const raw = '---\ntitle: ZQL\ndescription: Zero Query Language\n---\nBody here\n';
@@ -99,4 +99,18 @@ test('rewriteDocLinks drops query strings from doc links', () => {
     ),
     '[s](server-zql.md#creating-a-database)',
   );
+});
+
+test('buildOverview prepends a provenance header and keeps content verbatim', () => {
+  const raw = 'Zero is a sync engine.\n\n## Key mental models\n\n- foo\n';
+  const out = buildOverview(raw);
+  assert.match(out, /^# Zero — Mental Models & Gotchas\n/);
+  assert.match(out, /upstream `lib\/llms-base\.md`/);
+  assert.match(out, /Zero is a sync engine\./);
+  assert.match(out, /## Key mental models/);
+  assert.ok(out.endsWith('\n'));
+});
+
+test('buildOverview normalizes CRLF and trailing whitespace', () => {
+  assert.ok(buildOverview('a\r\nb\r\n\n\n').endsWith('a\nb\n'));
 });
