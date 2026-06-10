@@ -1,5 +1,9 @@
 {
   "name": "zero-docs",
-  "version": "0.1.0",
-  "description": "Searchable Rocicorp Zero documentation as a Claude Code skill."
+  "description": "Local, auto-synced mirror of the Rocicorp Zero docs (ZQL, schema, mutators, permissions, zero-cache) so Claude answers from real docs instead of guessing.",
+  "author": { "name": "Pawel Topor", "url": "https://github.com/paweltopor" },
+  "homepage": "https://github.com/paweltopor/zero-docs-skill",
+  "repository": "https://github.com/paweltopor/zero-docs-skill",
+  "license": "Apache-2.0",
+  "keywords": ["rocicorp-zero", "zero", "zql", "sync-engine", "documentation", "local-first"]
 }
