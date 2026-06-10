@@ -2,39 +2,52 @@
 
 A Claude Code plugin that mirrors the [Rocicorp Zero](https://zero.rocicorp.dev)
 documentation into local, grep-friendly Markdown so Claude Code answers Zero
-questions from the real docs instead of guessing.
+questions (ZQL, schema, mutators, permissions, zero-cache) from the real docs
+instead of guessing.
 
-## What's inside
+Compared to fetching `zero.rocicorp.dev/llms.txt` at question time: this is
+offline, grep-able, version-pinned (`SOURCE.md`), auto-synced weekly, and the
+skill triggers automatically whenever you work on Zero code — no network
+round-trips mid-task.
+
+## Install
+
+In Claude Code:
+
+```
+/plugin marketplace add paweltopor/zero-docs-skill
+/plugin install zero-docs@zero-docs
+```
+
+The skill activates automatically when you work on Zero-related code. New
+commits (including the weekly docs sync) reach installed users as plugin
+updates.
+
+## How it works
 
 - `skills/zero-docs/` — the installable skill: `SKILL.md` router, generated
   `INDEX.md`, and `references/` (one Markdown file per upstream doc).
-- `scripts/sync.mjs` — regenerates `references/` + `INDEX.md` from upstream.
+- `scripts/sync.mjs` — enumerates docs from a shallow clone of
+  [rocicorp/zero-docs](https://github.com/rocicorp/zero-docs) (for titles,
+  descriptions, and the pinned commit), fetches each page's **build-rendered
+  markdown** from `zero.rocicorp.dev/docs/{slug}.md`, and rewrites internal
+  links to local relative paths.
 
 ## Updating
 
 ```bash
 npm run sync        # re-pull upstream and regenerate (commit the result)
-npm run sync:check  # CI: non-zero exit if committed output drifts from upstream
+npm run sync:check  # non-zero exit if committed output drifts from upstream
 npm test            # unit tests for the transform/index/collect modules
 ```
 
 `SOURCE.md` records the upstream commit the current mirror was generated from.
 A weekly GitHub Action opens a PR automatically when upstream changes.
 
-## Installing as a plugin
-
-Point your Claude Code plugin configuration at this repository. The `zero-docs`
-skill activates when you work on Zero-related code.
-
-## Transform fidelity
-
-The sync transforms MDX to Markdown mechanically: frontmatter and fenced code
-blocks are preserved verbatim, `<Note>` callouts become blockquotes, and other
-JSX wrapper tags (e.g. `<CodeGroup>`, `<ZeroProvider>`) are stripped while their
-inner content is kept. A small number of upstream components inject content at
-build time (e.g. `SyncedCode`); where the source MDX has no inline body, that
-content is not captured. The sync logs every stripped component name so coverage
-gaps are visible.
+> **Note (maintainers/forks):** the weekly sync workflow opens PRs via
+> `peter-evans/create-pull-request`, which requires the repo setting
+> **Settings → Actions → General → "Allow GitHub Actions to create and approve
+> pull requests"** to be enabled.
 
 ## License & attribution
 
