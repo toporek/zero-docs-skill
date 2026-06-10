@@ -1,9 +1,9 @@
 {
   "name": "zero-docs",
   "description": "Local, auto-synced mirror of the Rocicorp Zero docs (ZQL, schema, mutators, permissions, zero-cache) so Claude answers from real docs instead of guessing.",
-  "author": { "name": "Pawel Topor", "url": "https://github.com/paweltopor" },
-  "homepage": "https://github.com/paweltopor/zero-docs-skill",
-  "repository": "https://github.com/paweltopor/zero-docs-skill",
+  "author": { "name": "Pawel Topor", "url": "https://github.com/toporek" },
+  "homepage": "https://github.com/toporek/zero-docs-skill",
+  "repository": "https://github.com/toporek/zero-docs-skill",
   "license": "Apache-2.0",
   "keywords": ["rocicorp-zero", "zero", "zql", "sync-engine", "documentation", "local-first"]
 }

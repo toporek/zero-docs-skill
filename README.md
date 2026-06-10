@@ -15,7 +15,7 @@ round-trips mid-task.
 In Claude Code:
 
 ```
-/plugin marketplace add paweltopor/zero-docs-skill
+/plugin marketplace add toporek/zero-docs-skill
 /plugin install zero-docs@zero-docs
 ```
 
