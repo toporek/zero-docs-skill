@@ -47,6 +47,8 @@ export default function RootLayout() {
 
 For a complete example, see [zslack](samples.md#zslack).
 
+To handle a full disk or a database that fails to open, see [Storage Failures](connection.md#storage-failures).
+
 > 🤓 **If you like speed…**: `op-sqlite` is much faster than `expo-sqlite` but does not work with [Expo Go](https://expo.dev/go). However, it is supported with `expo prebuild` and development builds.
 
 **For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt

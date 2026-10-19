@@ -43,6 +43,6 @@ Fly.io provides physically attached SSDs, even for their smallest VMs. Deploying
 
 ## /statz
 
-`zero-cache` makes some internal health statistics available via the `/statz` endpoint of `zero-cache`. In order to access this, you must configure an [admin password](../zero-cache-config.md#admin-password).
+`zero-cache` makes some internal health statistics available via the `/statz` endpoint of `zero-cache`. In order to access this, you must configure an [admin password](../zero-cache-config.md#admin-password) or an [operator password](../zero-cache-config.md#operator-password).
 
 **For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt
