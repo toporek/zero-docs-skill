@@ -23,6 +23,13 @@ You will also need to deploy a Postgres database, your frontend, and your API se
 
 Before setting up Postgres, read [Connecting to Postgres](connecting-to-postgres.md) for provider-specific notes.
 
+## Docker Images
+
+The examples below use Docker Hub, but the Zero container image is available from:
+
+* Docker Hub: `rocicorp/zero:1.11.0`
+* GHCR: `ghcr.io/rocicorp/zero:1.11.0`
+
 ## Minimum Viable Strategy
 
 The simplest way to deploy Zero is to run everything on a single node. This is the least expensive way to run Zero, and it can take you surprisingly far.
@@ -36,7 +43,7 @@ Here are equivalent single-node configurations for a few common deployment targe
 ```yaml
 services:
   zero-cache:
-    image: rocicorp/zero:1.6.2
+    image: rocicorp/zero:1.11.0
     ports:
       - 4848:4848
     stop_grace_period: 10m
@@ -86,7 +93,7 @@ primary_region = "iad"
 kill_timeout = 300
 
 [build]
-  image = "rocicorp/zero:1.6.2"
+  image = "rocicorp/zero:1.11.0"
 
 [http_service]
   internal_port = 4848
@@ -139,7 +146,7 @@ export default $config({
 
     new sst.aws.Service('ZeroCache', {
       cluster,
-      image: 'rocicorp/zero:1.6.2',
+      image: 'rocicorp/zero:1.11.0',
       cpu: '1 vCPU',
       memory: '2 GB',
       volumes: [{efs, path: '/data'}],
@@ -209,7 +216,7 @@ spec:
       terminationGracePeriodSeconds: 600
       containers:
         - name: zero-cache
-          image: rocicorp/zero:1.6.2
+          image: rocicorp/zero:1.11.0
           ports:
             - name: http
               containerPort: 4848
@@ -284,7 +291,7 @@ Here are equivalent multi-node configurations for the same topology on a few com
 ```yaml
 services:
   replication-manager:
-    image: rocicorp/zero:1.6.2
+    image: rocicorp/zero:1.11.0
     # Do not expose the RM to the public internet - only view-syncers
     expose:
       - 4849
@@ -308,7 +315,7 @@ services:
       start_period: 10m
 
   view-syncer:
-    image: rocicorp/zero:1.6.2
+    image: rocicorp/zero:1.11.0
     ports:
       - 4848:4848
     stop_grace_period: 10m
@@ -354,7 +361,7 @@ primary_region = "iad"
 kill_timeout = 300
 
 [build]
-  image = "rocicorp/zero:1.6.2"
+  image = "rocicorp/zero:1.11.0"
 
 # Do not add [http_service] or [[services]] to this app. The
 # replication-manager serves Zero's internal replication protocol and should
@@ -391,7 +398,7 @@ primary_region = "iad"
 kill_timeout = 300
 
 [build]
-  image = "rocicorp/zero:1.6.2"
+  image = "rocicorp/zero:1.11.0"
 
 # If you run more than one view-syncer on Fly, add sticky routing
 # (for example Fly Replay / replay_cache) so clients stay on one machine.
@@ -462,7 +469,7 @@ export default $config({
       'ReplicationManager',
       {
         cluster,
-        image: 'rocicorp/zero:1.6.2',
+        image: 'rocicorp/zero:1.11.0',
         cpu: '1 vCPU',
         memory: '2 GB',
         environment: {
@@ -503,7 +510,7 @@ export default $config({
       'ViewSyncer',
       {
         cluster,
-        image: 'rocicorp/zero:1.6.2',
+        image: 'rocicorp/zero:1.11.0',
         cpu: '2 vCPU',
         memory: '4 GB',
         environment: {
@@ -573,7 +580,7 @@ spec:
       terminationGracePeriodSeconds: 600
       containers:
         - name: replication-manager
-          image: rocicorp/zero:1.6.2
+          image: rocicorp/zero:1.11.0
           ports:
             - name: http
               containerPort: 4849
@@ -645,7 +652,7 @@ spec:
       terminationGracePeriodSeconds: 600
       containers:
         - name: view-syncer
-          image: rocicorp/zero:1.6.2
+          image: rocicorp/zero:1.11.0
           ports:
             - name: http
               containerPort: 4848
@@ -710,7 +717,7 @@ spec:
       targetPort: http
 ```
 
-In multi-node deployments, keep `ZERO_LITESTREAM_BACKUP_URL` on the `replication-manager` only and point it at an AWS S3 bucket.
+In multi-node deployments, keep `ZERO_LITESTREAM_BACKUP_URL` on the `replication-manager` only and point it at an AWS S3 bucket. If you enable [Litestream v5 backups](zero-cache-config.md#litestream-backup-using-v5), end the URL with `/`, for example `s3://acme-zero-backups/v1/`.
 
 The view-syncers in the multi-node topology can be horizontally scaled as needed.
 
