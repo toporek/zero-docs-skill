@@ -79,9 +79,14 @@
 - [Zero 0.9](references/release-notes/0.9.md) — JWK Support
 - [Zero 1.0](references/release-notes/1.0.md) — First Stable Release
 - [Zero 1.1](references/release-notes/1.1.md) — Replication Monitoring
+- [Zero 1.10](references/release-notes/1.10.md) — Unique Keys and More Reliable Replication
+- [Zero 1.11](references/release-notes/1.11.md) — Cached Results and Sturdier Client Storage
 - [Zero 1.2](references/release-notes/1.2.md) — IVM Performance and Bug Fixes
 - [Zero 1.3](references/release-notes/1.3.md) — Faster Initial Sync and Other Perf Improvements
 - [Zero 1.4](references/release-notes/1.4.md) — Performance and Reliability Improvements
 - [Zero 1.5](references/release-notes/1.5.md) — Schema Change Improvements and Client Group Auth
 - [Zero 1.6](references/release-notes/1.6.md) — PlanetScale Failover Support
+- [Zero 1.7](references/release-notes/1.7.md) — Query Correctness and Performance
+- [Zero 1.8](references/release-notes/1.8.md) — Observability and Reliability
+- [Zero 1.9](references/release-notes/1.9.md) — Stability and Query Correctness
 - [Release Notes](references/release-notes/index.md)

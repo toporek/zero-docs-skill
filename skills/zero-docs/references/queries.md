@@ -128,7 +128,7 @@ console.log(queries.posts.all.queryName)
 
 Query parameters are supplied by the client application and passed to the server automatically by Zero. This makes them unsuitable for credentials, since the user could modify them.
 
-For this reason, Zero queries also support the concept of a [`context` object](auth.md#context).
+For this reason, Zero queries also support the concept of a [`context` object](auth.md#define-the-context-type).
 
 Access your context with the `ctx` parameter to your query:
 
@@ -140,7 +140,7 @@ const myPostsQuery = defineQuery(({ctx: {userID}}) => {
 })
 ```
 
-> 💡 **Without global DefaultTypes**: If you don't want to register your [Context](auth.md#context) and [Schema](schema.md#register-schema-type) types globally, you can use `defineQueryWithType` and `defineQueriesWithType`:
+> 💡 **Without global DefaultTypes**: If you don't want to register your [Context](auth.md#define-the-context-type) and [Schema](schema.md#register-schema-type) types globally, you can use `defineQueryWithType` and `defineQueriesWithType`:
 >
 > ```ts
 > import {
@@ -529,6 +529,15 @@ const results = await zero.run(
 )
 ```
 
+Pass `{type: 'cached'}` to also accept a result the server confirmed in an earlier session. It resolves as soon as the result is [`cached`](#cached-results) or `complete`, so it can return without waiting for the server:
+
+```tsx
+const results = await zero.run(
+  queries.issues.byPriority('high'),
+  {type: 'cached'}
+)
+```
+
 ### For Preloading
 
 Almost all Zero apps will want to preload some data in order to maximize the feel of instantaneous UI transitions.
@@ -545,6 +554,8 @@ zero.preload(
   })
 )
 ```
+
+`preload()` returns three things. `cleanup` ends the preload, and Zero keeps the rows for the query's [TTL](#ttls). `complete` is a promise that resolves once the server returns the result, and `cached` resolves once the result is [`cached`](#cached-results) or `complete`.
 
 ## Missing Data
 
@@ -698,9 +709,76 @@ view.addListener((issues, resultType) => {
 })
 ```
 
-The possible values of `result.type` are currently `complete` and `unknown`.
+The possible values of `result.type` are:
+
+* `unknown`: whatever data the client has right now, which may be incomplete.
+* `cached`: the client stores a result that the server confirmed during a previous session. See [Cached Results](#cached-results).
+* `complete`: the server has returned the result during this session.
+* `error`: the query failed. See [Handling Errors](#handling-errors).
 
 The `complete` value is currently only returned when Zero has received the server result. In the future, Zero will be able to return this result type when it *knows* that all possible data for this query is already available locally. Additionally, we plan to add a `prefix` result for when the data is known to be a prefix of the complete result. See [Consistency](#consistency) for more information.
+
+### Cached Results
+
+Along with the data it stores on the client (IndexedDB in the browser, SQLite on React Native), Zero remembers which query results the server has confirmed. When the app starts again and the client still has one of those results, the query starts out `cached` instead of `unknown`. It becomes `complete` once the server sends the result again. If Zero evicts the stored result first, the query drops back to `unknown`.
+
+A `cached` result was complete when the server sent it, but it may be stale by now. It's good for showing stored data, or an empty state, without waiting for the server, and that works offline too. If the data has to be current, wait for `complete`.
+
+For example, to show an empty inbox without waiting for the server:
+
+**React**
+
+```tsx
+const [issues, issuesResult] = useQuery(
+  queries.issues.inbox()
+)
+
+const confirmed =
+  issuesResult.type === 'cached' ||
+  issuesResult.type === 'complete'
+
+if (issues.length === 0 && confirmed) {
+  return <div>Your inbox is empty</div>
+}
+```
+
+**SolidJS**
+
+```tsx
+const [issues, issuesResult] = useQuery(() =>
+  queries.issues.inbox()
+)
+
+const confirmed = () =>
+  issuesResult().type === 'cached' ||
+  issuesResult().type === 'complete'
+
+return (
+  <Show
+    when={issues().length > 0 || !confirmed()}
+    fallback={<div>Your inbox is empty</div>}
+  >
+    {/* ... */}
+  </Show>
+)
+```
+
+**TypeScript**
+
+```ts
+const view = zero.materialize(queries.issues.inbox())
+
+view.addListener((issues, resultType) => {
+  if (
+    issues.length === 0 &&
+    (resultType === 'cached' || resultType === 'complete')
+  ) {
+    console.log('Inbox is empty')
+  }
+})
+```
+
+`zero.run()` and `zero.preload()` can also return as soon as a result is `cached`: pass `{type: 'cached'}` to `run()`, or wait on the `cached` promise that `preload()` returns.
 
 ## Handling Errors
 

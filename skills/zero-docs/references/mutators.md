@@ -93,6 +93,8 @@ tx.mutate.user.insert({
 })
 ```
 
+If the Zero primary key already exists, `insert` will succeed without changing the row - use `upsert` to update an existing row.
+
 Optional fields can be set to `null` to explicitly set the new field to `null`. They can also be set to `undefined` to take the default value (which is often `null` but can also be some generated value server-side):
 
 ```tsx
@@ -234,7 +236,7 @@ Reads and writes within a mutator are transactional, meaning that the datastore 
 
 Mutator parameters are supplied by the client application and passed to the server automatically by Zero. This makes them unsuitable for credentials, since the user could modify them.
 
-For this reason, Zero mutators also support the concept of a [`context` object](auth.md#context).
+For this reason, Zero mutators also support the concept of a [`context` object](auth.md#define-the-context-type).
 
 Access your context with the `ctx` parameter to your mutator:
 
@@ -253,7 +255,7 @@ const createIssue = defineMutator(
 )
 ```
 
-> 💡 **Without global `DefaultTypes`**: If you don't want to register your [Context](auth.md#context) and [Schema](schema.md#register-schema-type) types globally, you can use `defineMutatorWithType` and `defineMutatorsWithType`:
+> 💡 **Without global `DefaultTypes`**: If you don't want to register your [Context](auth.md#define-the-context-type) and [Schema](schema.md#register-schema-type) types globally, you can use `defineMutatorWithType` and `defineMutatorsWithType`:
 >
 > **Drizzle**
 >
@@ -782,11 +784,68 @@ app.post('/api/zero/mutate', async c => {
 })
 ```
 
-If Zero receives any response from the mutate endpoint other than HTTP 200, 401, or 403, it will disconnect and enter the [error state](connection.md#error).
+Responses other than 200, 401, or 403 enter the [error state](connection.md#error). `zero-cache` will retry on `5xx` up to four times before returning an error.
 
 If Zero receives HTTP 401 or 403, the client will enter the needs auth state and require a manual reconnect. Use `zero.connection.connect()` for cookie auth or `zero.connection.connect({auth: newToken})` for token auth, then Zero will retry all queued mutations.
 
 If you want a different behavior, it is possible to [implement the mutate endpoint](#custom-mutate-implementation) yourself and handle errors differently.
+
+### Retrying Mutators
+
+Some errors go away on a second try. At the `repeatable read` and `serializable` [isolation levels](server-zql.md#isolation-level), for example, Postgres can abort a transaction that conflicts with a concurrent one. It fails with a serialization failure, code `40001`.
+
+To have Zero run a server mutator again in a fresh transaction when it fails with an error like that, call `tx.retryOn()`:
+
+```ts
+function isSerializationFailure(error: unknown) {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    error.code === '40001'
+  )
+}
+
+const updateIssue = defineMutator(
+  z.object({id: z.string(), title: z.string()}),
+  async ({tx, args: {id, title}}) => {
+    if (tx.location === 'server') {
+      tx.retryOn(isSerializationFailure)
+    }
+    await tx.mutate.issue.update({id, title})
+  }
+)
+```
+
+`retryOn()` takes a predicate. It gets the error and the attempt number: `1` when deciding the first re-run, `2` for the second, and so on. Return `true` to run the mutator again. If it returns anything else or throws, Zero records the error and skips the mutation, as with any [other error](#handling-errors).
+
+The predicate sees errors the mutator throws, and also errors Postgres raises at `COMMIT`, which the mutator can't catch. Everything the failed run wrote is rolled back, and the re-run reads fresh data.
+
+The error is passed as it was thrown. node-postgres and postgres.js errors have the Postgres error code in `code`. Other libraries can wrap the error, so check what yours throws.
+
+The predicate can also return a promise. Zero waits for it, so you can use it to back off before the next run:
+
+```ts
+tx.retryOn(async (error, attempt) => {
+  if (!isSerializationFailure(error)) {
+    return false
+  }
+  // Wait 50ms, then 100ms, then 150ms, and so on.
+  await new Promise(resolve =>
+    setTimeout(resolve, attempt * 50)
+  )
+  return true
+})
+```
+
+`retryOn()` only applies to the current run. The re-run starts the mutator from the top and calls `retryOn()` again, so call it before anything that can fail. You can call it more than once, and Zero runs the mutator again if any predicate returns `true`.
+
+Zero runs a mutator at most 5 times per mutation in each request to your mutate endpoint. If the last run also fails, Zero records the error.
+
+The predicate runs after the transaction has ended, so it can't use `tx`: reading or writing through `tx` there throws.
+
+Only retry mutators that are safe to run more than once. Work outside the database, such as sending an email, isn't rolled back. `retryOn()` only exists on the server, when `tx.location === 'server'`.
+
+> **Custom `Database` implementations**: The built-in adapters and `ZQLDatabase` support `retryOn()`. If you pass your own `Database` to `handleMutateRequest`, it must pass the `addRetryPredicate` it receives in `TransactionProviderInput` on to the transaction it creates with `CRUDMutatorFactory.createTransaction()`. Otherwise `tx.retryOn()` throws.
 
 ### Custom Mutate URL
 
@@ -936,7 +995,7 @@ const read2 = await zero.run(
 )
 ```
 
-You can also wait for the server write to succeed:
+You can also await `.server` for the server result:
 
 ```ts
 const write = zero.mutate(
@@ -948,10 +1007,9 @@ const write = zero.mutate(
 
 const clientRes = await write.client
 if (clientRes.type === 'error') {
-  throw new Error(
-    `Mutator failed on client`,
-    clientRes.error
-  )
+  throw new Error(`Mutator failed on client`, {
+    cause: clientRes.error
+  })
 }
 
 // optimistic write guaranteed to be present here, but not
@@ -960,27 +1018,73 @@ const read1 = await zero.run(
   queries.issue.byId('issue-123').one()
 )
 
-// Await server write – this involves a round-trip.
+// Await the server result/acknowledgment. This requires a round trip.
 const serverRes = await write.server
 if (serverRes.type === 'error') {
-  throw new Error(
-    `Mutator failed on server`,
-    serverRes.error
-  )
+  throw new Error(`Mutator failed on server`, {
+    cause: serverRes.error
+  })
 }
 
-// issue-123 is written to server and any results are
-// synced to this client.
-// read2 could potentially be undefined here, for example if the
-// server mutator rejected the write.
+// The server acknowledged the mutation, but its Postgres changes
+// may not have replicated to this client yet. This read can still
+// reflect optimistic rather than authoritative state.
 const read2 = await zero.run(
   queries.issue.byId('issue-123').one()
 )
 ```
 
-If the client-side mutator fails, the `.server` promise is also rejected with the same error. You don't have to listen to both promises, the server promise covers both cases.
+If the client-side mutator fails, `.server` also resolves to an error result. Awaiting `.server` therefore covers both client- and server-side failures.
 
-> **Returning data from mutators**: There is not yet a way to return data from mutators in the success case. [Let us know](https://discord.rocicorp.dev/)if you need this.
+### Returning Data
+
+A mutator can return a JSON value. The caller gets it in the `data` field of the success result.
+
+The client and server runs can return different values. For example, the server can return a value that only the database knows:
+
+```ts
+const createIssue = defineMutator(
+  z.object({id: z.string(), title: z.string()}),
+  async ({tx, args: {id, title}}) => {
+    await tx.mutate.issue.insert({id, title})
+
+    if (tx.location === 'client') {
+      // The client doesn't know the short ID yet.
+      return {shortID: null}
+    }
+
+    // Postgres assigns shortID when the row is inserted.
+    const issue = await tx.run(
+      zql.issue.where('id', id).one()
+    )
+    return {shortID: issue?.shortID ?? null}
+  }
+)
+```
+
+The `.client` result's `data` is what the client run returned, and the `.server` result's `data` is what the server run returned:
+
+```ts
+const write = zero.mutate(
+  mutators.issue.create({
+    id: crypto.randomUUID(),
+    title: 'New title'
+  })
+)
+
+const serverRes = await write.server
+if (serverRes.type === 'success') {
+  // `data` is a plain JSON value, so check its shape.
+  const {shortID} = z
+    .object({shortID: z.number().nullable()})
+    .parse(serverRes.data)
+  console.log('Short ID:', shortID)
+}
+```
+
+`data` is typed as `ReadonlyJSONValue | undefined` rather than as the mutator's return type, so check its shape before you use it. A mutator that returns nothing gives `undefined`.
+
+The server's value only reaches the client if your [mutate handler](#implementing-the-endpoint) returns the mutator's result, as `return mutator.fn({args, tx})` does in the examples above. Zero also saves that value in your database with the mutation's result, so the client still gets it if the response from your mutate endpoint is lost. Nothing is saved for a mutator that returns nothing.
 
 ## Permissions
 

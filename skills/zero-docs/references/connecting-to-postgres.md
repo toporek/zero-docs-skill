@@ -55,6 +55,20 @@ After your server restarts, show the `wal_level` again to ensure it has changed:
 psql -c 'SHOW wal_level'
 ```
 
+### Change Database Stall Detection
+
+`zero-cache` monitors operations against `ZERO_CHANGE_DB` so it can recover when a proxy or network failure leaves a half-open connection and a query that never completes. It treats completed operations and batches as progress. If an operation makes no progress within the timeout, `zero-cache` stops so its process supervisor can restart it.
+
+This differs from Postgres's `statement_timeout`: it also handles pathological cases where Postgres considers a connection idle but never returns a response. The default no-progress timeout is 30 seconds. Periodically monitored operations can be detected between one and two timeout intervals after their last progress.
+
+### WAL Sender Timeout
+
+`zero-cache` uses Postgres's `wal_sender_timeout` setting to monitor its replication connection. When the timeout is greater than `0`, Zero sends keepalives and reconnects if the replication stream stops responding. The inbound timeout defaults to twice `wal_sender_timeout`.
+
+A healthy WAL sender can sometimes remain silent longer than this while decoding WAL from unpublished tables or assembling a large transaction. Set [`ZERO_UPSTREAM_PG_STREAM_INBOUND_TIMEOUT_MS`](zero-cache-config.md#upstream-pg-stream-inbound-timeout) to widen Zero's inbound threshold without changing the server's timeout. Manual keepalive timing remains derived from `wal_sender_timeout`.
+
+Setting `wal_sender_timeout` to `0` disables the timeout in Postgres and the related keepalive and reconnect checks in Zero, even when an inbound timeout override is configured. Other connection failure detection remains active.
+
 ### Bounding WAL Size
 
 For development databases, you can set a `max_slot_wal_keep_size` value in Postgres. This will help limit the amount of WAL kept around.
@@ -250,6 +264,6 @@ COMMIT;
 > COMMENT ON PUBLICATION zero_pub IS 'anything';
 > ```
 >
-> It is still supported, but was replaced by `update_schemas()` because the latter is catches changes to any DDL, not just publication changes.
+> `COMMENT ON PUBLICATION` remains supported, but `update_schemas()` is preferred because it detects any DDL change, not just publication changes. Either hook causes Zero to [backfill existing rows](schema.md#backfill) for tables or columns newly added to the publication.
 
 **For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt
