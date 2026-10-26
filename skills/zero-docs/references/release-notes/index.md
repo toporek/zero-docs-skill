@@ -1,5 +1,10 @@
 # Release Notes
 
+* [Zero 1.11: Cached Results and Sturdier Client Storage](1.11.md)
+* [Zero 1.10: Unique Keys and More Reliable Replication](1.10.md)
+* [Zero 1.9: Stability and Query Correctness](1.9.md)
+* [Zero 1.8: Observability and Reliability](1.8.md)
+* [Zero 1.7: Query Correctness and Performance](1.7.md)
 * [Zero 1.6: PlanetScale Failover Support](1.6.md)
 * [Zero 1.5: Schema Change Improvements and Client Group Auth](1.5.md)
 * [Zero 1.4: Performance and Reliability Improvements](1.4.md)
