@@ -42,9 +42,9 @@ zql.issue
 
 This is a design tradeoff that allows Zero to better reuse the row locally for future queries. This also makes it easier to share types between different parts of the code.
 
-> 🧑‍🏫 **Data returned from ZQL should be considered immutable**: This means you should not modify the data directly. Instead, clone the data and modify the clone.
+> 🧑‍🏫 **Data returned from ZQL should be considered immutable**: Do not directly modify JavaScript values returned from ZQL queries.
 >
-> ZQL caches values and returns them multiple times. If you modify a value returned from ZQL, you will modify it everywhere it is used. This can lead to subtle bugs.
+> ZQL caches values across queries to improve performance and reduce re-renders in frameworks like React and Solid. If you modify a value returned from ZQL, you will modify it everywhere it is used. This can lead to subtle bugs.
 >
 > JavaScript and TypeScript lack true immutable types so we use `readonly` to help enforce it. But it's easy to cast away the `readonly` accidentally.
 
@@ -200,19 +200,23 @@ The first parameter is always a column name from the table being queried. TypeSc
 
 ### Comparison Operators
 
-Where supports the following comparison operators:
+`where()` supports the following comparison operators:
 
 | Operator                                 | Allowed Operand Types         | Description                                                              |
 | ---------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
 | `=` , `!=`                               | boolean, number, string       | JS strict equal (===) semantics                                          |
-| `<` , `<=`, `>`, `>=`                    | number                        | JS number compare semantics                                              |
+| `<` , `<=`, `>`, `>=`                    | number, string                | Numeric or string ordering                                               |
 | `LIKE`, `NOT LIKE`, `ILIKE`, `NOT ILIKE` | string                        | SQL-compatible `LIKE` / `ILIKE`                                          |
 | `IN` , `NOT IN`                          | boolean, number, string       | RHS must be array. Returns true if rhs contains lhs by JS strict equals. |
 | `IS` , `IS NOT`                          | boolean, number, string, null | Same as `=` but also works for `null`                                    |
 
 TypeScript will restrict you from using operators with types that don’t make sense – you can’t use `>` with `boolean` for example.
 
-> **Don't see the operator you need?**: [Let us know](https://discord.rocicorp.dev/)! Many are easy to add.
+> **ILIKE and collation**: Zero can evaluate an `ILIKE` filter in three places: in-memory on the client, in ZQLite against the replica, or as SQL in Postgres.
+>
+> ZQLite and the in-memory query engine use Unicode-aware lowercasing before matching. This means common non-ASCII case variants, such as `MÜLLER` and `müller`, match in both.
+>
+> If you need non-ASCII text in PG to work with `ILIKE`, use a Unicode-aware collation for those text columns, such as the database's default UTF-8 locale.
 
 ### Equals is the Default Comparison Operator
 
@@ -306,7 +310,7 @@ To compare to a literal value, use the `cmpLit` helper:
 zql.issue.where(cmpLit('foobar', 'foo' + 'bar'))
 ```
 
-This is particularly useful for implementing [permissions](auth.md#read-permissions), because the first parameter can be a field of your [context](auth.md#context):
+This is particularly useful for implementing [permissions](auth.md#read-permissions), because the first parameter can be a field of your [context](auth.md#define-the-context-type):
 
 ```ts
 zql.issue.where(cmpLit(ctx.role, 'admin'))
@@ -434,7 +438,7 @@ You can manually flip just one or a few of the `whereExists` clauses in a query,
 
 Scalar subqueries are an optimization for `exists` queries. Instead of doing a join at query time, Zero pre-resolves the subquery and rewrites it as a simple equality check.
 
-To use scalar subqueries, add `{scalar: true}` to your `whereExists` call:
+To use scalar subqueries, add a unique index in Postgres and [declare it as unique in the Zero schema](schema.md#unique-keys), then add `{scalar: true}` to your `whereExists` call:
 
 ```tsx
 // Instead of joining to find issues where project.name = 'zero'
@@ -469,7 +473,7 @@ The query needs to be "rehydrated" (re-run) whenever the scalar subquery result 
 
 This is fine for relatively stable lookup data like user IDs or project IDs, but you probably wouldn't want it for rapidly-changing data.
 
-Also, scalar subqueries only work when the subquery is guaranteed to return at most one row (hence "scalar"). Zero checks that your subquery constrains a unique index and will throw an error if it doesn't.
+Scalar subqueries only work when the subquery is guaranteed to return at most one row. The callback must constrain every column of a primary key or a key [declared with `.unique(...)`](schema.md#unique-keys) using equality. Compound keys require an equality constraint for every column. They also only support one-hop relationships, not junctions.
 
 ### Future Work
 

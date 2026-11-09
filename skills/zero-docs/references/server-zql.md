@@ -244,6 +244,67 @@ export const mutators = defineMutators({
 })
 ```
 
+### Isolation Level
+
+By default, each transaction starts with a plain `BEGIN`, so Postgres uses its default isolation level. On a stock Postgres, that is `read committed`.
+
+To use a different level, pass `isolationLevel` in the options argument of the adapter factory. It can be `'read committed'`, `'repeatable read'`, or `'serializable'`:
+
+**Drizzle**
+
+```ts
+export const dbProvider = zeroDrizzle(
+  schema,
+  drizzleClient,
+  {
+    isolationLevel: 'serializable'
+  }
+)
+```
+
+**Kysely**
+
+```ts
+export const dbProvider = zeroKysely(schema, kysely, {
+  isolationLevel: 'serializable'
+})
+```
+
+**Prisma**
+
+```ts
+// Use the Postgres spelling, not Prisma's 'Serializable'.
+export const dbProvider = zeroPrisma(schema, prisma, {
+  isolationLevel: 'serializable'
+})
+```
+
+**node-postgres**
+
+```ts
+// The third argument is an optional logger.
+export const dbProvider = zeroNodePg(
+  schema,
+  pool,
+  undefined,
+  {
+    isolationLevel: 'serializable'
+  }
+)
+```
+
+**postgres.js**
+
+```ts
+export const dbProvider = zeroPostgresJS(schema, sql, {
+  isolationLevel: 'serializable'
+})
+```
+
+Every transaction the adapter opens uses this level, including the ones your mutators run in. The `TransactionOptions` and `IsolationLevel` types are exported from `@rocicorp/zero/server`.
+
+At `repeatable read` and `serializable`, Postgres can abort a transaction that conflicts with a concurrent one. Use [`tx.retryOn()`](mutators.md#retrying-mutators) to run the mutator again when that happens.
+
 ### Custom Database
 
 To implement support for some other Postgres bindings library, you will implement the `DBConnection` interface.
