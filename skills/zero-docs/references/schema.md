@@ -205,6 +205,25 @@ const user = table('user')
   .primaryKey('orgID', 'userID')
 ```
 
+#### Unique Keys
+
+Use `unique` to declare a unique index or constraint that already exists in the database. Pass every column for a compound unique key, and call `unique` once for each index:
+
+```ts
+const user = table('user')
+  .columns({
+    id: string(),
+    email: string(),
+    orgID: string(),
+    handle: string()
+  })
+  .primaryKey('id')
+  .unique('email')
+  .unique('orgID', 'handle')
+```
+
+This declaration lets Zero's type system recognize queries that constrain at most one row, including [scalar subqueries](zql.md#scalar-subqueries). It does not create or enforce a database constraint, so it must match a real unique index or constraint upstream.
+
 ### Relationships
 
 Use the `relationships` function to define relationships between tables. Use the `one` and `many` helpers to define singular and plural relationships, respectively:
@@ -587,10 +606,20 @@ Zero handles both these cases through a process called *backfilling*.
 
 Zero backfills existing data to the replica in the background after detecting a new column. The new column is not exposed to the client until all data has been backfilled, which may take some time depending on the amount of data.
 
+> **Wait for backfill before deploying code that uses the new data**: During backfill, the new column is hidden from the replica. If you deploy app or API code that queries the column before backfill completes, those queries can fail even though the column exists in Postgres.
+
 ### Monitoring Backfill Progress
 
-To track backfill progress, check your `zero-cache` logs for messages about backfilling status.
+You can detect backfill status several ways:
 
-If you're using [Cloud Zero](https://zerosync.dev/#pricing), backfill progress is displayed directly in the dashboard.
+* **Cloud Zero**: Backfill progress is displayed directly in the dashboard.
+
+* **ChangeDB**: Query the `backfilling` table in the ChangeDB. When any rows are returned, Zero is still backfilling:
+
+  ```sql
+  SELECT * FROM "<app>/cdc"."backfilling" WHERE "schema" = 'public';
+  ```
+
+* **Client observation**: Observe rows synced to a client. After backfill completes, the new column is visible on each row's JavaScript value, regardless of whether the column is present in `schema.ts`.
 
 **For AI agents**: to view all the available documentation, visit https://zero.rocicorp.dev/llms.txt
